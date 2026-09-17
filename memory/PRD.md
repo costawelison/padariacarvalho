@@ -34,6 +34,7 @@ Criar um site simples de pedidos para uma padaria, fácil de usar por pessoas co
 - Tela de confirmação e novo pedido com formulário limpo.
 - API FastAPI de pedidos e validação de payload.
 - Testes finais de backend, frontend, mobile e fluxo WhatsApp passaram.
+- Atualização visual: logo oficial aplicada no cabeçalho e imagens de pães, doces e lanches alinhadas às descrições dos produtos.
 
 ## Backlog priorizado
 ### P0 — próximo passo
