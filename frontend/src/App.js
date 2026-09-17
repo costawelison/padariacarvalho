@@ -2,11 +2,13 @@ import { useMemo, useState } from "react";
 import "@/App.css";
 import { MessageCircle, Minus, Plus, ShoppingBag, Trash2, Truck, Store, ArrowRight, Check, Search } from "lucide-react";
 
-const logo = "https://customer-assets-0z36b82j.emergentagent.net/job_52d80212-dba1-470f-b241-757f3af77736/artifacts/uchmtbyx_WhatsApp%20Image%202026-09-17%20at%2009.06.06%20%282%29.jpeg";
+const logo = "https://customer-assets-0z36b82j.emergentagent.net/job_52d80212-dba1-470f-b241-757f3af77736/artifacts/0zo81bqy_WhatsApp%20Image%202026-09-17%20at%2009.06.05.jpeg";
 const photos = {
   bolos: "https://images.pexels.com/photos/28729037/pexels-photo-28729037.jpeg?auto=compress&cs=tinysrgb&w=700",
   salgados: "https://images.pexels.com/photos/33938859/pexels-photo-33938859.png?auto=compress&cs=tinysrgb&w=700",
-  pao: "https://images.pexels.com/photos/38598140/pexels-photo-38598140.jpeg?auto=compress&cs=tinysrgb&w=700",
+  pao: "https://images.unsplash.com/photo-1609889132708-e31330e6c7a4?auto=format&fit=crop&w=700&q=85",
+  doces: "https://customer-assets-0z36b82j.emergentagent.net/job_52d80212-dba1-470f-b241-757f3af77736/artifacts/uchmtbyx_WhatsApp%20Image%202026-09-17%20at%2009.06.06%20%282%29.jpeg",
+  lanches: "https://images.pexels.com/photos/13871295/pexels-photo-13871295.jpeg?auto=compress&cs=tinysrgb&w=700",
 };
 const categories = ["Todos", "Bolos", "Salgados", "Pães", "Doces", "Lanches"];
 const initialForm = { name: "", phone: "", fulfillment: "retirada", address: "", payment: "Dinheiro", notes: "" };
@@ -26,15 +28,15 @@ const products = [
   ["Pães", "Pão Vitória / baguete / caseirão", 2, "Escolha sua variedade", "pao"],
   ["Pães", "Pão de forma", 10, "Tradicional", "pao"],
   ["Pães", "Pão integral", 5, "Tradicional", "pao"],
-  ["Doces", "Canudo", 60, "Frango · Doce de leite · Chocolate", "salgados"],
-  ["Doces", "Doces para festa", 70, "Cento · Beijinho · Brigadeiro", "bolos"],
-  ["Doces", "Cupcake", 1, "Unidade (opção especial R$ 3,00)", "bolos"],
-  ["Doces", "Pudim", 8, "Pequeno", "bolos"],
-  ["Lanches", "Lanche natural", 5, "Queijo · Presunto · Requeijão · Alface", "salgados"],
-  ["Lanches", "Pão de queijo assado", 1, "Também disponível por R$ 0,50", "pao"],
-  ["Lanches", "Pão de queijo frito / Chipa", 1, "Unidade", "pao"],
-  ["Lanches", "Rosquinha doce", 2, "Chocolate branco · Chocolate", "bolos"],
-  ["Lanches", "Torta em fatia", 8, "Fatia", "bolos"],
+  ["Doces", "Canudo", 60, "Frango · Doce de leite · Chocolate", "doces"],
+  ["Doces", "Doces para festa", 70, "Cento · Beijinho · Brigadeiro", "doces"],
+  ["Doces", "Cupcake", 1, "Unidade (opção especial R$ 3,00)", "doces"],
+  ["Doces", "Pudim", 8, "Pequeno", "doces"],
+  ["Lanches", "Lanche natural", 5, "Queijo · Presunto · Requeijão · Alface", "lanches"],
+  ["Lanches", "Pão de queijo assado", 1, "Também disponível por R$ 0,50", "salgados"],
+  ["Lanches", "Pão de queijo frito / Chipa", 1, "Unidade", "salgados"],
+  ["Lanches", "Rosquinha doce", 2, "Chocolate branco · Chocolate", "doces"],
+  ["Lanches", "Torta em fatia", 8, "Fatia", "doces"],
 ];
 const money = (n) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
