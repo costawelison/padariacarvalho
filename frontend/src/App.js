@@ -56,6 +56,10 @@ function App() {
   const add = (item) => setCart(current => { const found = current.find(x => x[0][1] === item[1]); return found ? current.map(x => x[0][1] === item[1] ? [x[0], x[1] + 1] : x) : [...current, [item, 1]]; });
   const change = (name, delta) => setCart(current => current.map(x => x[0][1] === name ? [x[0], x[1] + delta] : x).filter(x => x[1] > 0));
   const sendWhatsApp = () => {
+    if (form.fulfillment === "entrega" && !form.address.trim()) {
+      window.alert("Informe o endereço para receber seu pedido.");
+      return;
+    }
     const lines = cart.map(([p, q]) => `• ${q}x ${p[1]} — ${money(p[2] * q)}`).join("%0A");
     const fulfillment = form.fulfillment === "retirada" ? "Retirada na padaria" : "Entrega";
     const msg = `Olá! Gostaria de fazer um pedido:%0A%0A${lines}%0A%0ATotal dos produtos: ${money(total)}%0A%0ACliente: ${form.name}%0ATelefone: ${form.phone}%0AForma: ${fulfillment}${form.address ? `%0AEndereço: ${form.address}` : ""}%0APagamento: ${form.payment}%0AObservações: ${form.notes || "Nenhuma"}`;
