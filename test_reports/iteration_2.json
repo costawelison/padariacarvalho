@@ -1,0 +1,28 @@
+{
+  "summary": "Revalidated the public API and checkout/catalog UI on desktop and mobile. Delivery without address is blocked, pickup remains allowed, catalog has 24 products, filters/search/cart totals work, WhatsApp delivery data is complete, and mobile has no horizontal overflow.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "New order followed by pickup checkout",
+        "issue": "The new-order action clears the cart but does not reset checkout form state. A delivery address from the previous order is included in the next pickup WhatsApp message.",
+        "affected_selectors": ["[data-testid=new-order-button]", "[data-testid=fulfillment-pickup]", "[data-testid=send-whatsapp-button]"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_orders.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": ["Reset form state (especially address, name, phone, notes, and payment/fulfillment as appropriate) when starting a new order so prior customer data cannot leak into the next WhatsApp message."],
+  "critical_code_review_comments": ["sendWhatsApp correctly blocks delivery without an address, but the new-order handler only clears cart and step; it leaves form state in memory, causing stale delivery data in subsequent orders."],
+  "updated_files": ["/app/test_reports/iteration_2.json"],
+  "success_rate": {"backend": "100%", "frontend": "94%"},
+  "seed_data_creation": "The existing API regression test created one TEST-prefixed order for persistence/schema verification.",
+  "retest_needed": true,
+  "should_call_test_agent_after_fix": true,
+  "context_for_next_testing_agent": "API root/order validation, 24 products, category/search filters, cart quantity/total, delivery address blocking, complete delivery WhatsApp message, pickup flow, and mobile overflow were covered. Retest new-order state reset and verify pickup messages never contain a previous address.",
+  "rca of the issue": "App form state is initialized once and the new-order button executes setCart([]) and setStep('catalog') only. Because setForm is not reset, address remains populated after a delivery order; selecting pickup hides the field but sendWhatsApp still appends any non-empty address. Reset form state in the new-order handler or omit address whenever fulfillment is retirada."
+}
