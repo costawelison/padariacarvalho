@@ -1,0 +1,26 @@
+{
+  "summary": "Comprehensive testing of the 4 new admin features (order status, business hours, product reorder, image upload). Backend: 12/12 new pytest cases pass in /app/backend/tests/test_new_features.py (store/status shape with keys 0..6; hours GET/PUT auth-guarded, invalid day '7' rejected with 400 and persisted values reloadable; POST /api/orders returns 200 with status=pendente when open and 409 with 'padaria está fechada' when all days disabled, restored afterwards; PATCH /api/orders/{id} 401 without token, 400 for invalid status, 404 for missing order, valid transitions across all 5 statuses persist; GET /api/orders always includes status field; POST /api/products/reorder 401 unauth then reverses order and GET reflects, reverted; POST /api/uploads/image 401 unauth, 400 for text/plain, PNG upload returns {path,url} and GET /api/files/{path} serves the exact bytes with image/* content-type). Existing regression tests still pass. Frontend: /admin login rejects wrong password (admin-login-error), correct login reveals all three tabs (admin-tab-products/orders/hours). Hours tab renders hours-enabled/open/close 0..6, toggling and saving triggers hours-saved indicator. Orders tab shows all 6 filter buttons (todos/pendente/preparando/pronto/entregue/cancelado), status select updates the pill class+text and persists across full page reload. Products tab in 'Todos' shows 24 drag handles; switching to a category surfaces reorder-hint. New-product modal opens with new-upload button. admin-logout returns to login. Storefront: setting all 7 days disabled shows store-closed-banner and disables all add-* buttons; restoring hours removes banner and re-enables checkout; happy path (add product → cart → checkout entrega with address → submit) reaches order-sent-message and the order is persisted (visible via admin GET /api/orders with status='pendente'). Hours were restored to permissive (all 7 days 00:00-23:59) at teardown.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_new_features.py",
+    "/app/backend/tests/test_admin_api.py",
+    "/app/test_reports/pytest/new_features.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py line 407: 'from fastapi import Request  # noqa' inside upload_image is dead code — Request is never used. Remove.",
+    "server.py: /api/files/{path:path} is intentionally public; consider adding a Content-Disposition header and validating the storage_path prefix to APP_NAME to prevent enumeration of unrelated stored objects if the storage key is shared across apps.",
+    "server.py check_open: uses local time in America/Belem — correct, but consider handling schedules that cross midnight (close < open). Currently 'close' <= 'open' silently returns is_open=false with no warning.",
+    "Admin.js OrdersTab still lacks 401 handling (noted in iteration_7) — stale token leaves loading state; not blocking but recommend redirect to login on 401 as top-level Admin does.",
+    "Frontend has no realtime sync of store/status — banner only updates on page load; long-open tabs will not reflect an admin closing the store until reload."
+  ],
+  "updated_files": ["/app/backend/tests/test_new_features.py", "/app/test_reports/iteration_8.json"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin: panficadoracarvalho2017@gmail.com / Padaria2017@",
+  "seed_data_creation": "Created a few TEST_-prefixed orders (kept in DB — small, no cleanup necessary) and briefly reordered products (reverted). Hours setting restored to permissive (all days 00:00-23:59) at end.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run: `REACT_APP_BACKEND_URL=https://padaria-pedidos.preview.emergentagent.com pytest /app/backend/tests -v`. New feature tests are in test_new_features.py; existing baseline in test_admin_api.py and test_orders.py. Frontend uses data-testids listed in Admin.js/App.js. IMPORTANT: any test that closes the store MUST restore hours to a permissive schedule (all days enabled 00:00-23:59) at teardown or downstream order/happy-path tests will fail with 409. Timezone is America/Belem.",
+  "rca of the issue": "N/A — no failures found."
+}

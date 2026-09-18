@@ -1,50 +1,51 @@
 # Panificadora Carvalho — PRD
 
 ## Problem Statement (original)
-User (Portuguese-speaking bakery owner) wants a simple online ordering system that even non-tech-savvy customers can use. Catalog covers cakes, breads, savory snacks, party items, drinks. Orders should be forwarded to the bakery's WhatsApp. On top of the storefront, the owner needs an admin panel to change prices, mark items as unavailable, edit/create/remove products, and view orders received.
+Portuguese-speaking bakery owner needs a simple online ordering system, easy for non-tech customers. Orders forwarded via WhatsApp. Owner needs an admin panel to change prices, mark items as unavailable, edit/create/remove products, view orders, track order status, set business hours, reorder items, and upload photos.
 
 ## Personas
-- Customer: Chooses items, adds to cart, checks out (retirada or entrega), completes order via WhatsApp handoff.
-- Bakery owner (admin): Logs in at `/admin` to manage catalog and view orders.
+- Customer: chooses items, cart, checkout (retirada or entrega), WhatsApp handoff.
+- Bakery owner (admin): `/admin` login to manage catalog, orders, and hours.
 
 ## Core Requirements
-- Public catalog fetched from API, categorized (Bolos, Salgados, Pães, Doces, Lanches)
+- Public catalog fetched from API, categorized
 - Cart, checkout (delivery/pickup), address required for delivery
-- WhatsApp handoff with formatted order message (wa.me link)
-- Orders persisted in Mongo
-- Admin login (JWT + Bearer token)
-- Admin CRUD products + availability toggle (Esgotado badge on storefront)
-- Admin orders list
+- WhatsApp handoff (wa.me link)
+- Orders persisted in Mongo with status tracking
+- Admin login (JWT + Bearer)
+- Admin CRUD products + availability toggle + reordering + photo upload
+- Order status management (pendente/preparando/pronto/entregue/cancelado)
+- Business hours per weekday (blocks checkout when closed)
 
 ## Implemented (2026-02)
-- FastAPI + React + MongoDB scaffolding (session 1)
-- 24 seeded products, real user-uploaded product images, custom logo
-- Cart, checkout with WhatsApp handoff, delivery address validation
-- **Admin panel** at `/admin` (JWT login, product CRUD, availability toggle, orders view)
-- 24 catalog items now stored in MongoDB, seeded on startup only if empty
-- Storefront shows "Esgotado" badge + disables Add button for unavailable products
+- FastAPI + React + MongoDB scaffolding
+- 24 seeded products, custom images/logo, WhatsApp checkout, cart, address validation
+- Admin panel at `/admin` (JWT), product CRUD, availability toggle, orders list
+- **Order status tracking** — per-order dropdown + status filter tabs
+- **Business hours** — 7-day schedule, "closed" banner + checkout block
+- **Drag-and-drop product reorder** (only in "Todos" filter)
+- **Image upload from device** via Emergent Object Storage (`/api/uploads/image` → served via `/api/files/{path}`)
 
 ## Auth
 - Admin: panficadoracarvalho2017@gmail.com / Padaria2017@ (seeded from env)
 - Bearer token in localStorage `padaria_admin_token`
 
 ## Key Endpoints
-- Public: GET /api/products · POST /api/orders
+- Public: GET /api/products · GET /api/store/status · POST /api/orders · GET /api/files/{path}
 - Auth: POST /api/auth/login · GET /api/auth/me
-- Admin (Bearer): POST/PATCH/DELETE /api/products · GET /api/orders
+- Admin (Bearer): POST/PATCH/DELETE /api/products · POST /api/products/reorder · GET /api/orders · PATCH /api/orders/{id} · GET+PUT /api/settings/hours · POST /api/uploads/image
 
 ## Backlog (P1)
-- Order status tracking (pending / preparing / ready / delivered) — admin flags orders as completed
-- Print-friendly order view for the kitchen
-- Business hours block (reject orders outside opening hours)
-- Reorder / drag-to-sort products in admin panel
-- Product image upload (Emergent Object Storage) instead of URL paste
+- Push/SMS notification to owner when new order arrives
+- Daily/weekly sales report in admin
 - Multi-user admin with password reset
+- Product tags/labels (novidade, promoção)
+- Coupon / promotion system
 
 ## Backlog (P2)
 - Refactor App.js into smaller components
-- Coupon / promotion system
 - Customer accounts + order history
+- Print-friendly order view for kitchen
 
 ## Test reports
-- /app/test_reports/iteration_1.json … iteration_7.json
+- /app/test_reports/iteration_1.json … iteration_8.json (all passing)
