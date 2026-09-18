@@ -1,53 +1,50 @@
-# PRD — Sistema de Pedidos da Panificadora Carvalho
+# Panificadora Carvalho — PRD
 
-## Problema original
-Criar um site simples de pedidos para uma padaria, fácil de usar por pessoas com pouca experiência em internet, usando o cardápio, preços, logo e fotos enviados pela proprietária.
+## Problem Statement (original)
+User (Portuguese-speaking bakery owner) wants a simple online ordering system that even non-tech-savvy customers can use. Catalog covers cakes, breads, savory snacks, party items, drinks. Orders should be forwarded to the bakery's WhatsApp. On top of the storefront, the owner needs an admin panel to change prices, mark items as unavailable, edit/create/remove products, and view orders received.
 
 ## Personas
-- Clientes da vizinhança que querem pedir pães, bolos, salgados, doces e lanches pelo celular.
-- Pessoas que preferem confirmar o pedido diretamente pelo WhatsApp.
-- Equipe da Panificadora Carvalho que recebe e confirma os pedidos.
+- Customer: Chooses items, adds to cart, checks out (retirada or entrega), completes order via WhatsApp handoff.
+- Bakery owner (admin): Logs in at `/admin` to manage catalog and view orders.
 
-## Requisitos principais (estáticos)
-- Catálogo organizado por categorias e opções legíveis.
-- Preços exibidos em reais, priorizando os preços das fotos quando divergentes.
-- Busca, filtros e controles simples de quantidade.
-- Carrinho com resumo e total dos produtos.
-- Escolha entre retirada e entrega.
-- Nome, telefone, endereço quando entrega, pagamento e observações.
-- Mensagem completa do pedido encaminhada para WhatsApp da padaria.
-- Layout responsivo, acessível e simples no celular.
-- API para registrar pedidos sem expor identificadores MongoDB.
+## Core Requirements
+- Public catalog fetched from API, categorized (Bolos, Salgados, Pães, Doces, Lanches)
+- Cart, checkout (delivery/pickup), address required for delivery
+- WhatsApp handoff with formatted order message (wa.me link)
+- Orders persisted in Mongo
+- Admin login (JWT + Bearer token)
+- Admin CRUD products + availability toggle (Esgotado badge on storefront)
+- Admin orders list
 
-## Decisões de arquitetura
-- Frontend React com estado local para catálogo, carrinho e checkout.
-- Backend FastAPI com endpoint POST `/api/orders` para persistência futura/operacional.
-- MongoDB usando exclusivamente `MONGO_URL` e `DB_NAME` já configurados.
-- WhatsApp via handoff real para `wa.me/5593991552808`.
-- Imagens enviadas pelo cliente para a marca e imagens de produto adequadas para o catálogo.
+## Implemented (2026-02)
+- FastAPI + React + MongoDB scaffolding (session 1)
+- 24 seeded products, real user-uploaded product images, custom logo
+- Cart, checkout with WhatsApp handoff, delivery address validation
+- **Admin panel** at `/admin` (JWT login, product CRUD, availability toggle, orders view)
+- 24 catalog items now stored in MongoDB, seeded on startup only if empty
+- Storefront shows "Esgotado" badge + disables Add button for unavailable products
 
-## Implementado — 17/09/2026
-- Catálogo completo com 24 itens legíveis, categorias, busca e imagens.
-- Carrinho com adicionar, remover, aumentar/diminuir quantidade e total.
-- Checkout com retirada/entrega, validação de endereço, pagamento e observações.
-- Mensagem de WhatsApp com itens, quantidades, total e dados do cliente.
-- Tela de confirmação e novo pedido com formulário limpo.
-- API FastAPI de pedidos e validação de payload.
-- Testes finais de backend, frontend, mobile e fluxo WhatsApp passaram.
-- Atualização visual: logo oficial aplicada no cabeçalho e imagens de pães, doces e lanches alinhadas às descrições dos produtos.
-- Atualização visual — 18/09/2026: nova logo enviada pela proprietária aplicada no cabeçalho; referências da internet selecionadas para bolos, salgados, pães, doces e lanches.
+## Auth
+- Admin: panficadoracarvalho2017@gmail.com / Padaria2017@ (seeded from env)
+- Bearer token in localStorage `padaria_admin_token`
 
-## Backlog priorizado
-### P0 — próximo passo
-- Confirmar com a proprietária os itens e preços que ficaram ambíguos no material original.
-- Adicionar horário de funcionamento e instruções de taxa/área de entrega.
+## Key Endpoints
+- Public: GET /api/products · POST /api/orders
+- Auth: POST /api/auth/login · GET /api/auth/me
+- Admin (Bearer): POST/PATCH/DELETE /api/products · GET /api/orders
 
-### P1
-- Painel simples para a equipe visualizar pedidos recebidos.
-- Campo de data e horário desejados para retirada ou entrega.
-- Fotos próprias dos principais produtos, substituindo imagens ilustrativas.
+## Backlog (P1)
+- Order status tracking (pending / preparing / ready / delivered) — admin flags orders as completed
+- Print-friendly order view for the kitchen
+- Business hours block (reject orders outside opening hours)
+- Reorder / drag-to-sort products in admin panel
+- Product image upload (Emergent Object Storage) instead of URL paste
+- Multi-user admin with password reset
 
-### P2
-- Destaques de ofertas do dia.
-- Compartilhamento do cardápio e dos favoritos.
-- Histórico local de pedidos recentes para repetir uma compra.
+## Backlog (P2)
+- Refactor App.js into smaller components
+- Coupon / promotion system
+- Customer accounts + order history
+
+## Test reports
+- /app/test_reports/iteration_1.json … iteration_7.json
