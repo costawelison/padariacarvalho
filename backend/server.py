@@ -7,19 +7,23 @@ load_dotenv(ROOT_DIR / '.env')
 import os
 import uuid
 import logging
+import requests
 import bcrypt
 import jwt
 from datetime import datetime, timezone, timedelta
-from typing import List, Optional
+from zoneinfo import ZoneInfo
+from typing import List, Optional, Dict, Any
 
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-# ---------- DB ----------
+# ---------- Config ----------
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
@@ -28,13 +32,62 @@ JWT_SECRET = os.environ['JWT_SECRET']
 JWT_ALGO = "HS256"
 ADMIN_EMAIL = os.environ['ADMIN_EMAIL'].lower()
 ADMIN_PASSWORD = os.environ['ADMIN_PASSWORD']
+BR_TZ = ZoneInfo("America/Belem")  # GMT-3, no DST
+
+# Object storage
+STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
+STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
+EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
+APP_NAME = "padaria-carvalho"
+_storage_key = None
 
 app = FastAPI()
 api = APIRouter(prefix="/api")
 bearer = HTTPBearer(auto_error=False)
 
 
-# ---------- Helpers ----------
+# ---------- Storage helpers ----------
+def init_storage(force: bool = False):
+    global _storage_key
+    if _storage_key and not force:
+        return _storage_key
+    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
+    resp.raise_for_status()
+    _storage_key = resp.json()["storage_key"]
+    return _storage_key
+
+
+def put_object(path: str, data: bytes, content_type: str) -> dict:
+    key = init_storage()
+    resp = requests.put(
+        f"{STORAGE_URL}/objects/{path}",
+        headers={"X-Storage-Key": key, "Content-Type": content_type},
+        data=data,
+        timeout=120,
+    )
+    if resp.status_code == 404:
+        key = init_storage(force=True)
+        resp = requests.put(
+            f"{STORAGE_URL}/objects/{path}",
+            headers={"X-Storage-Key": key, "Content-Type": content_type},
+            data=data,
+            timeout=120,
+        )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_object(path: str) -> tuple[bytes, str]:
+    key = init_storage()
+    resp = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
+    if resp.status_code == 404:
+        key = init_storage(force=True)
+        resp = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
+    resp.raise_for_status()
+    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+
+
+# ---------- Auth helpers ----------
 def hash_pw(pw: str) -> str:
     return bcrypt.hashpw(pw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
@@ -47,11 +100,7 @@ def verify_pw(pw: str, hashed: str) -> bool:
 
 
 def create_token(email: str) -> str:
-    payload = {
-        "sub": email,
-        "exp": datetime.now(timezone.utc) + timedelta(days=7),
-        "type": "access",
-    }
+    payload = {"sub": email, "exp": datetime.now(timezone.utc) + timedelta(days=7), "type": "access"}
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
 
@@ -69,6 +118,40 @@ async def require_admin(creds: Optional[HTTPAuthorizationCredentials] = Depends(
     if not user:
         raise HTTPException(status_code=401, detail="Administrador não encontrado")
     return {"email": email}
+
+
+# ---------- Business hours helpers ----------
+DEFAULT_HOURS = {
+    str(i): {"enabled": True, "open": "06:00", "close": "20:00"} for i in range(7)
+}
+# Sunday closed by default
+DEFAULT_HOURS["6"] = {"enabled": False, "open": "06:00", "close": "12:00"}
+
+
+async def get_hours() -> dict:
+    doc = await db.settings.find_one({"key": "hours"})
+    if not doc:
+        return DEFAULT_HOURS
+    return doc.get("value", DEFAULT_HOURS)
+
+
+def check_open(hours: dict) -> dict:
+    now = datetime.now(BR_TZ)
+    # Python weekday: Monday=0..Sunday=6
+    day = str(now.weekday())
+    schedule = hours.get(day, {})
+    if not schedule.get("enabled"):
+        return {"is_open": False, "day": day, "schedule": schedule}
+    try:
+        oh, om = map(int, schedule["open"].split(":"))
+        ch, cm = map(int, schedule["close"].split(":"))
+    except Exception:
+        return {"is_open": False, "day": day, "schedule": schedule}
+    minutes_now = now.hour * 60 + now.minute
+    open_min = oh * 60 + om
+    close_min = ch * 60 + cm
+    is_open = open_min <= minutes_now < close_min
+    return {"is_open": is_open, "day": day, "schedule": schedule, "server_time": now.strftime("%H:%M")}
 
 
 # ---------- Models ----------
@@ -95,6 +178,10 @@ class OrderCreate(BaseModel):
     notes: Optional[str] = None
 
 
+class OrderStatusUpdate(BaseModel):
+    status: str  # pendente | preparando | pronto | entregue | cancelado
+
+
 class ProductCreate(BaseModel):
     category: str
     name: str
@@ -111,6 +198,17 @@ class ProductUpdate(BaseModel):
     description: Optional[str] = None
     image_url: Optional[str] = None
     available: Optional[bool] = None
+
+
+class ReorderRequest(BaseModel):
+    ids: List[str]  # in the desired display order
+
+
+class HoursUpdate(BaseModel):
+    hours: Dict[str, Dict[str, Any]]
+
+
+VALID_STATUSES = {"pendente", "preparando", "pronto", "entregue", "cancelado"}
 
 
 # ---------- Seed ----------
@@ -152,10 +250,7 @@ async def seed_admin():
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
     elif not verify_pw(ADMIN_PASSWORD, existing["password_hash"]):
-        await db.users.update_one(
-            {"email": ADMIN_EMAIL},
-            {"$set": {"password_hash": hash_pw(ADMIN_PASSWORD)}},
-        )
+        await db.users.update_one({"email": ADMIN_EMAIL}, {"$set": {"password_hash": hash_pw(ADMIN_PASSWORD)}})
 
 
 async def seed_products():
@@ -165,12 +260,8 @@ async def seed_products():
         for idx, (cat, name, price, desc, img) in enumerate(SEED_PRODUCTS):
             docs.append({
                 "id": str(uuid.uuid4()),
-                "category": cat,
-                "name": name,
-                "price": float(price),
-                "description": desc,
-                "image_url": img,
-                "available": True,
+                "category": cat, "name": name, "price": float(price),
+                "description": desc, "image_url": img, "available": True,
                 "order_index": idx,
                 "created_at": datetime.now(timezone.utc).isoformat(),
             })
@@ -181,8 +272,14 @@ async def seed_products():
 async def startup():
     await db.users.create_index("email", unique=True)
     await db.products.create_index("order_index")
+    await db.settings.create_index("key", unique=True)
     await seed_admin()
     await seed_products()
+    try:
+        init_storage()
+        logger.info("Object storage initialized")
+    except Exception as e:
+        logger.error(f"Storage init failed: {e}")
 
 
 # ---------- Public routes ----------
@@ -197,10 +294,22 @@ async def list_products():
     return docs
 
 
+@api.get("/store/status")
+async def store_status():
+    hours = await get_hours()
+    return {**check_open(hours), "hours": hours}
+
+
 @api.post("/orders")
 async def create_order(order: OrderCreate):
+    # Block if store is closed
+    hours = await get_hours()
+    status = check_open(hours)
+    if not status["is_open"]:
+        raise HTTPException(status_code=409, detail="A padaria está fechada no momento. Tente novamente durante o horário de funcionamento.")
     order_dict = order.model_dump()
     order_dict["order_id"] = str(uuid.uuid4())
+    order_dict["status"] = "pendente"
     order_dict["created_at"] = datetime.now(timezone.utc).isoformat()
     await db.orders.insert_one(order_dict)
     order_dict.pop("_id", None)
@@ -223,25 +332,29 @@ async def me(user=Depends(require_admin)):
     return user
 
 
-# ---------- Admin routes ----------
+# ---------- Admin: products ----------
 @api.post("/products")
 async def create_product(p: ProductCreate, user=Depends(require_admin)):
     last = await db.products.find_one({}, sort=[("order_index", -1)])
     next_idx = (last.get("order_index", -1) + 1) if last else 0
     doc = {
         "id": str(uuid.uuid4()),
-        "category": p.category,
-        "name": p.name,
-        "price": float(p.price),
-        "description": p.description,
-        "image_url": p.image_url,
-        "available": p.available,
+        "category": p.category, "name": p.name, "price": float(p.price),
+        "description": p.description, "image_url": p.image_url, "available": p.available,
         "order_index": next_idx,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.products.insert_one(doc)
     doc.pop("_id", None)
     return doc
+
+
+@api.post("/products/reorder")
+async def reorder_products(body: ReorderRequest, user=Depends(require_admin)):
+    for idx, pid in enumerate(body.ids):
+        await db.products.update_one({"id": pid}, {"$set": {"order_index": idx}})
+    docs = await db.products.find({}, {"_id": 0}).sort("order_index", 1).to_list(500)
+    return docs
 
 
 @api.patch("/products/{product_id}")
@@ -264,15 +377,93 @@ async def delete_product(product_id: str, user=Depends(require_admin)):
     return {"ok": True}
 
 
+# ---------- Admin: image upload ----------
+@api.post("/uploads/image")
+async def upload_image(file: UploadFile = File(...), user=Depends(require_admin)):
+    allowed = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+    ct = (file.content_type or "").lower()
+    if ct not in allowed:
+        raise HTTPException(status_code=400, detail="Envie uma imagem JPG, PNG, WEBP ou GIF.")
+    data = await file.read()
+    if len(data) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo maior que 10 MB.")
+    ext = (file.filename or "img").rsplit(".", 1)[-1].lower() if "." in (file.filename or "") else ct.split("/")[-1]
+    file_id = str(uuid.uuid4())
+    path = f"{APP_NAME}/products/{file_id}.{ext}"
+    try:
+        result = put_object(path, data, ct)
+    except Exception as e:
+        logger.error(f"Storage upload failed: {e}")
+        raise HTTPException(status_code=500, detail="Falha ao enviar imagem. Tente novamente.")
+    stored_path = result.get("path", path)
+    await db.uploads.insert_one({
+        "id": file_id,
+        "storage_path": stored_path,
+        "content_type": ct,
+        "size": result.get("size"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    # Return a URL our backend can serve
+    from fastapi import Request  # noqa
+    public_url = f"/api/files/{stored_path}"
+    return {"path": stored_path, "url": public_url}
+
+
+# ---------- Public: file proxy (for uploaded product images) ----------
+from fastapi import Response
+
+
+@api.get("/files/{path:path}")
+async def files(path: str):
+    record = await db.uploads.find_one({"storage_path": path})
+    if not record:
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    try:
+        data, ct = get_object(path)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    return Response(content=data, media_type=record.get("content_type") or ct, headers={"Cache-Control": "public, max-age=86400"})
+
+
+# ---------- Admin: orders ----------
 @api.get("/orders")
 async def list_orders(user=Depends(require_admin)):
     docs = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    # Ensure status default for old orders
+    for d in docs:
+        d.setdefault("status", "pendente")
     return docs
+
+
+@api.patch("/orders/{order_id}")
+async def update_order_status(order_id: str, body: OrderStatusUpdate, user=Depends(require_admin)):
+    if body.status not in VALID_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Status inválido. Use: {', '.join(sorted(VALID_STATUSES))}")
+    result = await db.orders.update_one({"order_id": order_id}, {"$set": {"status": body.status}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    doc = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
+    return doc
+
+
+# ---------- Admin: business hours ----------
+@api.get("/settings/hours")
+async def get_settings_hours(user=Depends(require_admin)):
+    return {"hours": await get_hours()}
+
+
+@api.put("/settings/hours")
+async def put_settings_hours(body: HoursUpdate, user=Depends(require_admin)):
+    # Validate keys 0..6
+    for k in body.hours.keys():
+        if k not in {"0", "1", "2", "3", "4", "5", "6"}:
+            raise HTTPException(status_code=400, detail=f"Dia inválido: {k}")
+    await db.settings.update_one({"key": "hours"}, {"$set": {"value": body.hours}}, upsert=True)
+    return {"hours": body.hours}
 
 
 # ---------- Wire up ----------
 app.include_router(api)
-
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -280,9 +471,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 
 @app.on_event("shutdown")

@@ -32,16 +32,24 @@
 .admin-filters button.active,.admin-filters button:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 .add-new{background:var(--orange);color:#fff;border:0;padding:11px 18px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border-radius:4px;transition:.2s}
 .add-new:hover{background:#a5501e}
+.hint{color:var(--muted);font-size:13px;margin:-8px 0 16px;font-style:italic}
 
 .admin-products{display:flex;flex-direction:column;gap:12px}
-.admin-product{background:var(--white);border:1px solid var(--line);padding:16px;display:grid;grid-template-columns:80px 1fr auto;gap:18px;align-items:start;transition:.2s}
+.admin-product{background:var(--white);border:1px solid var(--line);padding:16px;display:grid;grid-template-columns:24px 80px 1fr auto;gap:14px;align-items:start;transition:.2s}
 .admin-product.off{opacity:.62}
+.admin-product .drag-handle{color:var(--muted);cursor:grab;padding-top:28px;display:flex;justify-content:center}
+.admin-product .drag-handle:active{cursor:grabbing}
 .admin-product-thumb{width:80px;height:80px;object-fit:cover;background:var(--cream);border:1px solid var(--line)}
 .admin-product-fields{display:flex;flex-direction:column;gap:10px}
 .admin-product-fields .row{display:flex;gap:10px;flex-wrap:wrap}
 .admin-product-fields label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:flex;flex-direction:column;gap:4px}
 .admin-product-fields label.grow{flex:1;min-width:150px}
 .admin-product-fields input,.admin-product-fields select{border:1px solid var(--line);padding:8px 10px;background:#fffdf9;font-size:14px;outline-color:var(--orange);color:var(--ink);font-weight:400;text-transform:none;letter-spacing:0;font-family:inherit}
+.image-input{display:flex;gap:6px;align-items:stretch}
+.image-input input{flex:1;min-width:0}
+.upload-btn{border:1px solid var(--line);background:var(--cream);color:var(--ink);padding:0 12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;white-space:nowrap;font-family:inherit;text-transform:none;letter-spacing:0}
+.upload-btn:hover:not(:disabled){background:var(--orange);color:#fff;border-color:var(--orange)}
+.upload-btn:disabled{opacity:.6;cursor:not-allowed}
 .admin-product-actions{display:flex;flex-direction:column;gap:6px;min-width:145px}
 .admin-product-actions button{border:1px solid var(--line);background:var(--white);padding:8px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink);border-radius:3px;justify-content:center;transition:.2s}
 .admin-product-actions button:disabled{opacity:.5;cursor:not-allowed}
@@ -51,7 +59,7 @@
 .admin-product-actions .delete:hover{background:#a12525;color:#fff;border-color:#a12525}
 
 .admin-modal-backdrop{position:fixed;inset:0;background:#2b211caa;display:grid;place-items:center;z-index:20;padding:20px}
-.admin-modal{background:var(--white);width:100%;max-width:500px;padding:24px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);box-shadow:0 30px 60px #00000030}
+.admin-modal{background:var(--white);width:100%;max-width:500px;padding:24px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);box-shadow:0 30px 60px #00000030;max-height:92vh;overflow-y:auto}
 .admin-modal-head{display:flex;justify-content:space-between;align-items:center}
 .admin-modal-head h2{font-family:'Playfair Display',serif;margin:0;font-size:22px}
 .close-btn{background:none;border:0;cursor:pointer;color:var(--muted);padding:4px}
@@ -60,12 +68,18 @@
 .admin-modal .row{display:flex;gap:10px}
 .admin-modal .row .grow{flex:1}
 .admin-modal input,.admin-modal select{border:1px solid var(--line);padding:10px;background:#fffdf9;font-size:14px;outline-color:var(--orange);color:var(--ink);font-weight:400;text-transform:none;letter-spacing:0;font-family:inherit}
+.admin-preview{max-width:100%;max-height:180px;object-fit:cover;border:1px solid var(--line)}
 .admin-modal .save{margin-top:8px;background:var(--orange);color:#fff;border:0;padding:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.2s}
 .admin-modal .save:hover:not(:disabled){background:#a5501e}
 .admin-modal .save:disabled{opacity:.6;cursor:not-allowed}
 
 .admin-orders{display:flex;flex-direction:column;gap:14px}
-.admin-order{background:var(--white);border:1px solid var(--line);padding:18px 20px}
+.admin-order{background:var(--white);border:1px solid var(--line);padding:18px 20px;border-left-width:5px}
+.admin-order.status-pendente{border-left-color:#c76528}
+.admin-order.status-preparando{border-left-color:#e7a335}
+.admin-order.status-pronto{border-left-color:#2f8a4f}
+.admin-order.status-entregue{border-left-color:#8ea69a;opacity:.75}
+.admin-order.status-cancelado{border-left-color:#a12525;opacity:.65}
 .admin-order-head{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:10px}
 .admin-order-head b{font-size:17px}
 .admin-order-head small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
@@ -75,17 +89,49 @@
 .admin-order-items{margin:0;padding-left:18px;font-size:14px;color:var(--ink)}
 .admin-order-items li{margin:3px 0}
 .admin-order-notes{margin:10px 0 0;padding:10px;background:var(--cream);color:var(--ink);font-size:13px;border-left:3px solid var(--gold)}
+.admin-order-status-row{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.admin-order-status-row label{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px}
+.admin-order-status-row select{border:1px solid var(--line);padding:6px 10px;background:#fffdf9;font-size:13px;font-family:inherit;color:var(--ink)}
+.status-pill{padding:5px 12px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;border-radius:20px}
+.status-pill.pendente{background:#fbe6d3;color:#7c3f10}
+.status-pill.preparando{background:#fbf1d5;color:#7a5c11}
+.status-pill.pronto{background:#dcefd7;color:#22582f}
+.status-pill.entregue{background:#e0e8e3;color:#3a4a41}
+.status-pill.cancelado{background:#f7d6d6;color:#7a1b1b}
 
 .admin-empty{text-align:center;padding:60px;background:var(--white);border:1px solid var(--line);color:var(--muted)}
 .admin-empty p{margin-top:14px}
 
+.hours-card{background:var(--white);border:1px solid var(--line);padding:28px}
+.hours-head{display:flex;gap:14px;align-items:flex-start;margin-bottom:20px;color:var(--orange)}
+.hours-head h2{font-family:'Playfair Display',serif;margin:0;font-size:22px;color:var(--ink)}
+.hours-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.hours-list{display:flex;flex-direction:column;gap:10px}
+.hours-row{display:grid;grid-template-columns:180px 1fr;gap:20px;align-items:center;padding:14px 16px;background:var(--cream);border:1px solid var(--line);transition:.2s}
+.hours-row.off{opacity:.55}
+.hours-toggle{display:flex;align-items:center;gap:10px;font-weight:600;cursor:pointer;font-size:14px}
+.hours-toggle input{width:18px;height:18px;accent-color:var(--orange)}
+.hours-times{display:flex;gap:14px}
+.hours-times label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.hours-times input{border:1px solid var(--line);padding:7px 10px;background:#fffdf9;font-size:13px;font-family:inherit;color:var(--ink)}
+.hours-times input:disabled{opacity:.5;cursor:not-allowed}
+.hours-footer{margin-top:22px;display:flex;justify-content:flex-end;align-items:center;gap:14px}
+.hours-saved{color:#2f8a4f;font-weight:700;font-size:13px}
+.hours-footer .save{background:var(--orange);color:#fff;border:0;padding:12px 22px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.2s}
+.hours-footer .save:hover:not(:disabled){background:#a5501e}
+.hours-footer .save:disabled{opacity:.6;cursor:not-allowed}
+
 @media(max-width:800px){
-  .admin-product{grid-template-columns:60px 1fr;grid-template-rows:auto auto}
+  .admin-product{grid-template-columns:24px 60px 1fr;grid-template-rows:auto auto}
+  .admin-product .drag-handle{grid-row:1/-1;padding-top:14px}
   .admin-product-actions{grid-column:1/-1;flex-direction:row;min-width:0;flex-wrap:wrap}
   .admin-product-actions button{flex:1;min-width:105px}
   .admin-topbar{flex-wrap:wrap;gap:10px;padding:12px 16px}
   .admin-topbar b{margin-left:0}
-  .admin-tabs{margin-left:0;width:100%;order:3}
-  .admin-tabs button{flex:1;justify-content:center}
+  .admin-tabs{margin-left:0;width:100%;order:3;flex-wrap:wrap}
+  .admin-tabs button{flex:1;justify-content:center;min-width:100px}
   .admin-main{padding:20px 14px 60px}
+  .hours-row{grid-template-columns:1fr;gap:12px}
+  .hours-times{flex-wrap:wrap}
+  .admin-order-status-row{flex-direction:column;align-items:stretch}
 }
