@@ -35,6 +35,7 @@ Criar um site simples de pedidos para uma padaria, fácil de usar por pessoas co
 - API FastAPI de pedidos e validação de payload.
 - Testes finais de backend, frontend, mobile e fluxo WhatsApp passaram.
 - Atualização visual: logo oficial aplicada no cabeçalho e imagens de pães, doces e lanches alinhadas às descrições dos produtos.
+- Atualização visual — 18/09/2026: nova logo enviada pela proprietária aplicada no cabeçalho; referências da internet selecionadas para bolos, salgados, pães, doces e lanches.
 
 ## Backlog priorizado
 ### P0 — próximo passo
