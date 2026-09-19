@@ -3,7 +3,7 @@ import axios from "axios";
 import "@/App.css";
 import { MessageCircle, Minus, Plus, ShoppingBag, Trash2, Truck, Store, ArrowRight, Check, Search, Clock } from "lucide-react";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = "https://padaria-carvalho-api.onrender.com/api";
 const logo = "https://customer-assets-v7afamib.emergentagent.net/job_padaria-pedidos/artifacts/mi6urdta_WhatsApp%20Image%202026-09-18%20at%2008.12.49.jpeg";
 const categories = ["Todos", "Bolos", "Salgados", "Pães", "Doces", "Lanches"];
 const DAY_LABELS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
