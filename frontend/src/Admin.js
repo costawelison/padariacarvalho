@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import "@/Admin.css";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = "https://padaria-carvalho-api.onrender.com/api";
 const TOKEN_KEY = "padaria_admin_token";
 const money = (n) => Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const CATEGORIES = ["Bolos", "Salgados", "Pães", "Doces", "Lanches"];
