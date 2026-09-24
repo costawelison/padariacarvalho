@@ -540,6 +540,114 @@ body{
     grid-column:auto;
   }
 
+  /* =========================================
+   PDV CARVALHO - NOVO CABEÇALHO
+   ========================================= */
+
+.topbar {
+  min-height: 86px;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-logo {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand-info strong {
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.brand-info span {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.brand-info small {
+  font-size: 12px;
+  opacity: .75;
+  margin-top: 4px;
+}
+
+
+/* =========================================
+   FOTOS DOS PRODUTOS
+   ========================================= */
+
+.product {
+  overflow: hidden;
+  padding: 0;
+}
+
+.product-image {
+  display: block;
+  width: 100%;
+  height: 145px;
+  object-fit: cover;
+  background: #f1e8df;
+}
+
+.product h3,
+.product p,
+.product .price,
+.product button {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+.product h3 {
+  margin-top: 14px;
+}
+
+.product p {
+  margin-top: 6px;
+}
+
+.product .price {
+  margin-top: 12px;
+}
+
+.product > button {
+  margin-bottom: 16px;
+}
+
+
+/* =========================================
+   MELHOR VISUAL NO IPAD
+   ========================================= */
+
+@media (min-width: 901px) {
+
+  .product-image {
+    height: 155px;
+  }
+
+  .products {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+}
   .payment{
     grid-template-columns:1fr;
   }
