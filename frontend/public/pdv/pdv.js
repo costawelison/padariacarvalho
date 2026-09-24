@@ -1,6 +1,10 @@
 const API = "https://padaria-carvalho-api.onrender.com/api";
 const TOKEN_KEY = "padaria_admin_token";
 
+const LOGO_URL = "https://customer-assets-v7afamib.emergentagent.net/job_padaria-pedidos/artifacts/mi6urdta_WhatsApp%20Image%202026-09-18%20at%2008.12.49.jpeg";
+
+const productImage = (url) => url || LOGO_URL;
+
 const state = {
   products: [],
   cart: [],
@@ -284,14 +288,23 @@ function render() {
   document.getElementById("app").innerHTML = `
     <div class="pdv">
 
-      <header class="topbar">
+     <header class="topbar">
 
-        <div class="brand">
-          <div class="brand-mark">🥖</div>
-          <span>
-            Panificadora Carvalho • PDV
-          </span>
-        </div>
+  <div class="brand">
+
+    <img
+      class="brand-logo"
+      src="${LOGO_URL}"
+      alt="Panificadora Carvalho"
+    >
+
+    <div class="brand-info">
+      <strong>Panificadora Carvalho</strong>
+      <span>PDV - Ponto de Venda</span>
+      <small>Qualidade e sabor todos os dias!</small>
+    </div>
+
+  </div>
 
         <div class="top-actions">
 
@@ -359,6 +372,13 @@ function render() {
               filtered()
                 .map(p => `
                   <article class="product">
+                  
+                  <img
+  class="product-image"
+  src="${productImage(p.image_url)}"
+  alt="${esc(p.name)}"
+  onerror="this.src='${LOGO_URL}'"
+>
 
                     <h3>
                       ${esc(p.name)}
