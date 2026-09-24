@@ -652,3 +652,108 @@ body{
     grid-template-columns:1fr;
   }
 }
+
+/* =========================================================
+   CORREÇÃO DO LOGO DO PDV
+   ========================================================= */
+
+.brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  max-width: 520px !important;
+  overflow: hidden !important;
+}
+
+.brand-logo {
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  max-width: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  object-fit: contain !important;
+  display: block !important;
+  position: static !important;
+  padding: 3px !important;
+  margin: 0 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+}
+
+.brand-info {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.brand-info strong {
+  font-size: 18px !important;
+  white-space: nowrap !important;
+}
+
+.brand-info span {
+  font-size: 13px !important;
+  white-space: nowrap !important;
+}
+
+.brand-info small {
+  font-size: 11px !important;
+  white-space: nowrap !important;
+}
+
+
+/* =========================================================
+   CORREÇÃO DAS FOTOS DOS PRODUTOS
+   ========================================================= */
+
+.product-image {
+  width: 100% !important;
+  height: 145px !important;
+  min-height: 145px !important;
+  max-height: 145px !important;
+  object-fit: cover !important;
+  display: block !important;
+  position: static !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+
+/* =========================================================
+   CABEÇALHO
+   ========================================================= */
+
+.topbar {
+  height: 78px !important;
+  min-height: 78px !important;
+  max-height: 78px !important;
+  padding: 8px 18px !important;
+  overflow: hidden !important;
+}
+
+
+/* =========================================================
+   TELA GRANDE / IPAD
+   ========================================================= */
+
+@media (min-width: 901px) {
+
+  .brand-logo {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+  }
+
+  .product-image {
+    height: 145px !important;
+    min-height: 145px !important;
+    max-height: 145px !important;
+  }
+
+}
