@@ -1,0 +1,25 @@
+{
+  "name": "PDV Panificadora Carvalho",
+  "short_name": "PDV Carvalho",
+  "description": "Sistema de Ponto de Venda da Panificadora Carvalho",
+  "id": "/pdv/",
+  "start_url": "/pdv/",
+  "scope": "/pdv/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#fffaf2",
+  "theme_color": "#3b2418",
+  "lang": "pt-BR",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
