@@ -2,7 +2,41 @@ const API = "https://padaria-carvalho-api.onrender.com/api";
 const TOKEN_KEY = "padaria_admin_token";
 
 const LOGO_URL = "https://customer-assets-v7afamib.emergentagent.net/job_padaria-pedidos/artifacts/mi6urdta_WhatsApp%20Image%202026-09-18%20at%2008.12.49.jpeg";
+function imprimirTesteMobilePrint() {
+  const html = `
+    <div style="text-align:center">
+      <b>PANIFICADORA CARVALHO</b><br>
+      TESTE DE IMPRESSAO<br><br>
+    </div>
 
+    Impressora: Bluetooth<br>
+    Papel: 80mm<br>
+    ESC/POS: OK<br><br>
+
+    ************************<br>
+    <b>IMPRESSAO FUNCIONANDO!</b><br>
+    ************************<br><br>
+  `;
+
+  const bytes = new TextEncoder().encode(html);
+  let binary = "";
+
+  bytes.forEach(byte => {
+    binary += String.fromCharCode(byte);
+  });
+
+  const base64 = btoa(binary);
+
+  const url = `com.samathosoft.webprint://#deb64#${base64}`;
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.style.display = "none";
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
 const productImage = (url) => url || LOGO_URL;
 
 const state = {
