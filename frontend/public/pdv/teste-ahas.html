@@ -17,23 +17,19 @@
       color: #3b2418;
     }
 
-    button {
-      padding: 15px 25px;
-      font-size: 18px;
-      border: 0;
-      border-radius: 8px;
-      background: #3b2418;
-      color: white;
-      cursor: pointer;
+    .box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 25px;
     }
 
-    #resultado {
-      margin-top: 25px;
-      padding: 20px;
-      background: white;
-      border-radius: 10px;
-      text-align: left;
-      white-space: pre-wrap;
+    iframe {
+      width: 100%;
+      height: 120px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      margin-top: 15px;
     }
   </style>
 </head>
@@ -44,40 +40,23 @@
 
   <p>Teste de comunicação com AHAS Print Service</p>
 
-  <button onclick="testarAHAS()">
-    TESTAR AHAS
-  </button>
+  <div class="box">
+    <h2>Teste direto</h2>
 
-  <div id="resultado">
-    Aguardando teste...
+    <p>
+      O quadro abaixo tenta acessar diretamente o AHAS:
+    </p>
+
+    <iframe
+      src="http://localhost:8765/health"
+      title="Teste AHAS">
+    </iframe>
+
+    <p>
+      Se aparecer a resposta do AHAS dentro do quadro,
+      significa que o Safari consegue acessar o serviço local.
+    </p>
   </div>
-
-  <script>
-    async function testarAHAS() {
-      const resultado = document.getElementById("resultado");
-
-      resultado.textContent = "Testando conexão com AHAS...";
-
-      try {
-        const resposta = await fetch("http://localhost:8765/health", {
-          method: "GET"
-        });
-
-        const texto = await resposta.text();
-
-        resultado.textContent =
-          "STATUS HTTP: " + resposta.status +
-          "\n\nRESPOSTA DO AHAS:\n" +
-          texto;
-
-      } catch (erro) {
-
-        resultado.textContent =
-          "ERRO AO CONECTAR COM AHAS:\n\n" +
-          erro.message;
-      }
-    }
-  </script>
 
 </body>
 </html>
