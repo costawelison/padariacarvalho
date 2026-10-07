@@ -30,23 +30,88 @@ function abrirMobilePrintUtil(html) {
   link.remove();
 }
 
-function imprimirTesteMobilePrint() {
-  const html = `
-    <div style="text-align:center">
-      <b>PANIFICADORA CARVALHO</b><br>
-      TESTE DE IMPRESSAO<br><br>
-    </div>
+function imprimirPedidoMobilePrint(order, total, troco = 0) {
 
-    Impressora: Bluetooth<br>
-    Papel: 80mm<br>
-    ESC/POS: OK<br><br>
+  let texto = "";
 
-    ************************<br>
-    <b>IMPRESSAO FUNCIONANDO!</b><br>
-    ************************<br><br>
-  `;
+  texto += "PANIFICADORA CARVALHO\n";
+  texto += "       PEDIDO / VENDA\n";
+  texto += "------------------------------\n";
 
-  abrirMobilePrintUtil(html);
+  texto += "Cliente: " + order.customer_name + "\n";
+  texto += "Pagamento: " + order.payment + "\n";
+
+  if (order.notes) {
+    texto += "Obs: " + order.notes + "\n";
+  }
+
+  texto += "\n";
+
+  order.items.forEach(item => {
+
+    const subtotal =
+      Number(item.unit_price) *
+      Number(item.quantity);
+
+    texto +=
+      item.name +
+      "\n";
+
+    texto +=
+      "  " +
+      item.quantity +
+      " x " +
+      money(item.unit_price) +
+      " = " +
+      money(subtotal) +
+      "\n";
+
+  });
+
+  texto += "\n";
+  texto += "------------------------------\n";
+  texto += "TOTAL: " + money(total) + "\n";
+
+  if (troco > 0) {
+    texto +=
+      "TROCO: " +
+      money(troco) +
+      "\n";
+  }
+
+  texto += "------------------------------\n";
+  texto += "\n";
+  texto += "Obrigado pela preferencia!\n";
+  texto += "Volte sempre!\n";
+  texto += "\n\n";
+
+  /*
+    #sl# = impressão em tamanho maior
+    #lf# = quebra de linha
+  */
+
+  const conteudo =
+    texto
+      .split("\n")
+      .map(linha =>
+        `#sl#${linha}#/sl##lf#`
+      )
+      .join("");
+
+  const url =
+    `com.samathosoft.webprint://#escps#${conteudo}`;
+
+  const link =
+    document.createElement("a");
+
+  link.href = url;
+  link.style.display = "none";
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  link.remove();
 }
 
 function imprimirPedidoMobilePrint(order, total, troco = 0) {
