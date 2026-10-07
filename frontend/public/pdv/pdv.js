@@ -2,6 +2,7 @@ const API = "https://padaria-carvalho-api.onrender.com/api";
 const TOKEN_KEY = "padaria_admin_token";
 
 const LOGO_URL = "https://customer-assets-v7afamib.emergentagent.net/job_padaria-pedidos/artifacts/mi6urdta_WhatsApp%20Image%202026-09-18%20at%2008.12.49.jpeg";
+
 function imprimirTesteMobilePrint() {
   const html = `
     <div style="text-align:center">
@@ -37,6 +38,7 @@ function imprimirTesteMobilePrint() {
   link.click();
   link.remove();
 }
+
 const productImage = (url) => url || LOGO_URL;
 
 const state = {
@@ -557,6 +559,10 @@ function render() {
                 Vendas de hoje
               </button>
 
+              <button id="printTestBtn">
+                🖨️ Testar impressora
+              </button>
+
             </div>
 
           </div>
@@ -669,6 +675,10 @@ function render() {
   document.getElementById(
     "salesBtn"
   ).onclick = openSales;
+
+  document.getElementById(
+    "printTestBtn"
+  ).onclick = imprimirTesteMobilePrint;
 }
 
 function modal(html) {
