@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste AHAS - Panificadora Carvalho</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f1eb;
+      padding: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #3b2418;
+    }
+
+    button {
+      padding: 15px 25px;
+      font-size: 18px;
+      border: 0;
+      border-radius: 8px;
+      background: #3b2418;
+      color: white;
+      cursor: pointer;
+    }
+
+    #resultado {
+      margin-top: 25px;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      text-align: left;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Panificadora Carvalho</h1>
+
+  <p>Teste de comunicação com AHAS Print Service</p>
+
+  <button onclick="testarAHAS()">
+    TESTAR AHAS
+  </button>
+
+  <div id="resultado">
+    Aguardando teste...
+  </div>
+
+  <script>
+    async function testarAHAS() {
+      const resultado = document.getElementById("resultado");
+
+      resultado.textContent = "Testando conexão com AHAS...";
+
+      try {
+        const resposta = await fetch("http://localhost:8765/health", {
+          method: "GET"
+        });
+
+        const texto = await resposta.text();
+
+        resultado.textContent =
+          "STATUS HTTP: " + resposta.status +
+          "\n\nRESPOSTA DO AHAS:\n" +
+          texto;
+
+      } catch (erro) {
+
+        resultado.textContent =
+          "ERRO AO CONECTAR COM AHAS:\n\n" +
+          erro.message;
+      }
+    }
+  </script>
+
+</body>
+</html>
