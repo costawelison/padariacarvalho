@@ -3,6 +3,33 @@ const TOKEN_KEY = "padaria_admin_token";
 
 const LOGO_URL = "https://customer-assets-v7afamib.emergentagent.net/job_padaria-pedidos/artifacts/mi6urdta_WhatsApp%20Image%202026-09-18%20at%2008.12.49.jpeg";
 
+/* =========================================================
+   IMPRESSÃO - MOBILE PRINT UTIL
+========================================================= */
+
+function abrirMobilePrintUtil(html) {
+  const bytes = new TextEncoder().encode(html);
+  let binary = "";
+
+  bytes.forEach(byte => {
+    binary += String.fromCharCode(byte);
+  });
+
+  const base64 = btoa(binary);
+
+  const url =
+    `com.samathosoft.webprint://#deb64#${base64}`;
+
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.style.display = "none";
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 function imprimirTesteMobilePrint() {
   const html = `
     <div style="text-align:center">
@@ -19,27 +46,93 @@ function imprimirTesteMobilePrint() {
     ************************<br><br>
   `;
 
-  const bytes = new TextEncoder().encode(html);
-  let binary = "";
-
-  bytes.forEach(byte => {
-    binary += String.fromCharCode(byte);
-  });
-
-  const base64 = btoa(binary);
-
-  const url = `com.samathosoft.webprint://#deb64#${base64}`;
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.style.display = "none";
-
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  abrirMobilePrintUtil(html);
 }
 
-const productImage = (url) => url || LOGO_URL;
+function imprimirPedidoMobilePrint(order, total, troco = 0) {
+
+  const itens = order.items.map(item => `
+    <div>
+      ${esc(item.name)}
+      x${item.quantity}
+      &nbsp;
+      ${money(item.unit_price * item.quantity)}
+    </div>
+  `).join("");
+
+  const html = `
+    <div style="text-align:center">
+
+      <b style="font-size:18px">
+        PANIFICADORA CARVALHO
+      </b>
+
+      <br>
+
+      <b>PEDIDO / VENDA</b>
+
+      <br>
+
+      ------------------------------<br>
+
+    </div>
+
+    <b>Cliente:</b>
+    ${esc(order.customer_name)}
+    <br>
+
+    <b>Pagamento:</b>
+    ${esc(order.payment)}
+    <br>
+
+    ${
+      order.notes
+        ? `<b>Obs:</b> ${esc(order.notes)}<br>`
+        : ""
+    }
+
+    <br>
+
+    ${itens}
+
+    <br>
+
+    ------------------------------<br>
+
+    <b>
+      TOTAL: ${money(total)}
+    </b>
+
+    <br>
+
+    ${
+      troco > 0
+        ? `<b>Troco: ${money(troco)}</b><br>`
+        : ""
+    }
+
+    ------------------------------<br>
+
+    <div style="text-align:center">
+
+      Obrigado pela preferência!<br>
+      Volte sempre!
+
+    </div>
+
+    <br><br>
+  `;
+
+  abrirMobilePrintUtil(html);
+}
+
+
+/* =========================================================
+   UTILIDADES
+========================================================= */
+
+const productImage = url =>
+  url || LOGO_URL;
 
 const state = {
   products: [],
@@ -59,46 +152,84 @@ const money = n =>
   });
 
 const esc = s =>
-  String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;"
-  }[m]));
+  String(s ?? "").replace(
+    /[&<>"']/g,
+    m => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[m])
+  );
 
 const headers = () =>
   state.token
-    ? { Authorization: `Bearer ${state.token}` }
+    ? {
+        Authorization:
+          `Bearer ${state.token}`
+      }
     : {};
 
 const cartTotal = () =>
-  state.cart.reduce((s, i) => s + i.price * i.qty, 0);
+  state.cart.reduce(
+    (s, i) =>
+      s + i.price * i.qty,
+    0
+  );
 
 const cartCount = () =>
-  state.cart.reduce((s, i) => s + i.qty, 0);
+  state.cart.reduce(
+    (s, i) =>
+      s + i.qty,
+    0
+  );
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
 
 function renderLogin(error = "") {
+
   document.getElementById("app").innerHTML = `
+
     <div class="login-wrap">
+
       <div class="login-card">
 
         <div class="logo-title">
-          <div class="mark">🥖</div>
-          <div>
-            <h2>PDV</h2>
-            <p>Panificadora Carvalho</p>
+
+          <div class="mark">
+            🥖
           </div>
+
+          <div>
+
+            <h2>PDV</h2>
+
+            <p>
+              Panificadora Carvalho
+            </p>
+
+          </div>
+
         </div>
 
-        <label>E-mail</label>
+        <label>
+          E-mail
+        </label>
+
         <input
           id="loginEmail"
           type="email"
           placeholder="E-mail do administrador"
         >
 
-        <label>Senha</label>
+        <label>
+          Senha
+        </label>
+
         <input
           id="loginPassword"
           type="password"
@@ -107,53 +238,86 @@ function renderLogin(error = "") {
 
         ${
           error
-            ? `<div class="error">${esc(error)}</div>`
+            ? `<div class="error">
+                ${esc(error)}
+               </div>`
             : ""
         }
 
-        <button class="primary" id="loginBtn">
+        <button
+          class="primary"
+          id="loginBtn"
+        >
           Entrar no PDV
         </button>
 
       </div>
+
     </div>
+
   `;
 
-  document.getElementById("loginBtn").onclick = login;
+  document.getElementById(
+    "loginBtn"
+  ).onclick = login;
 
-  document.getElementById("loginPassword").onkeydown = e => {
-    if (e.key === "Enter") login();
+  document.getElementById(
+    "loginPassword"
+  ).onkeydown = e => {
+
+    if (e.key === "Enter") {
+      login();
+    }
+
   };
 }
 
 async function login() {
+
   const email =
-    document.getElementById("loginEmail").value.trim();
+    document
+      .getElementById("loginEmail")
+      .value
+      .trim();
 
   const password =
-    document.getElementById("loginPassword").value;
+    document
+      .getElementById("loginPassword")
+      .value;
 
   try {
-    const r = await fetch(`${API}/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        email,
-        password
-      })
-    });
 
-    const d = await r.json();
+    const r = await fetch(
+      `${API}/auth/login`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify({
+          email,
+          password
+        })
+      }
+    );
+
+    const d =
+      await r.json();
 
     if (!r.ok) {
+
       throw new Error(
-        d.detail || "E-mail ou senha inválidos"
+        d.detail ||
+        "E-mail ou senha inválidos"
       );
+
     }
 
-    state.token = d.token;
+    state.token =
+      d.token;
 
     localStorage.setItem(
       TOKEN_KEY,
@@ -163,85 +327,158 @@ async function login() {
     await init();
 
   } catch (e) {
-    renderLogin(e.message);
+
+    renderLogin(
+      e.message
+    );
+
   }
 }
+
+
+/* =========================================================
+   API
+========================================================= */
 
 async function apiGet(path) {
-  const r = await fetch(`${API}${path}`, {
-    headers: headers()
-  });
+
+  const r =
+    await fetch(
+      `${API}${path}`,
+      {
+        headers: headers()
+      }
+    );
 
   if (r.status === 401) {
+
     logout();
-    throw new Error("Sessão expirada");
+
+    throw new Error(
+      "Sessão expirada"
+    );
+
   }
 
-  const d = await r.json();
+  const d =
+    await r.json();
 
   if (!r.ok) {
+
     throw new Error(
-      d.detail || "Erro na API"
+      d.detail ||
+      "Erro na API"
     );
+
   }
 
   return d;
 }
 
-async function apiSend(path, method, body) {
-  const r = await fetch(`${API}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...headers()
-    },
-    body: JSON.stringify(body)
-  });
+async function apiSend(
+  path,
+  method,
+  body
+) {
+
+  const r =
+    await fetch(
+      `${API}${path}`,
+      {
+        method,
+
+        headers: {
+          "Content-Type":
+            "application/json",
+          ...headers()
+        },
+
+        body:
+          JSON.stringify(body)
+      }
+    );
 
   if (r.status === 401) {
+
     logout();
-    throw new Error("Sessão expirada");
+
+    throw new Error(
+      "Sessão expirada"
+    );
+
   }
 
-  const d = await r.json();
+  const d =
+    await r.json();
 
   if (!r.ok) {
+
     throw new Error(
-      d.detail || "Erro na API"
+      d.detail ||
+      "Erro na API"
     );
+
   }
 
   return d;
 }
+
+
+/* =========================================================
+   INICIALIZAÇÃO
+========================================================= */
 
 async function init() {
+
   try {
-    await apiGet("/auth/me");
+
+    await apiGet(
+      "/auth/me"
+    );
 
     [
       state.products,
       state.store
     ] = await Promise.all([
-      apiGet("/products"),
-      apiGet("/store/status")
+
+      apiGet(
+        "/products"
+      ),
+
+      apiGet(
+        "/store/status"
+      )
+
     ]);
 
     try {
-      state.sales = await apiGet("/orders");
+
+      state.sales =
+        await apiGet(
+          "/orders"
+        );
+
     } catch (_) {
+
       state.sales = [];
+
     }
 
     render();
 
   } catch (e) {
+
     renderLogin(
-      state.token ? e.message : ""
+      state.token
+        ? e.message
+        : ""
     );
+
   }
 }
 
 function logout() {
+
   state.token = "";
 
   localStorage.removeItem(
@@ -251,96 +488,165 @@ function logout() {
   renderLogin();
 }
 
+
+/* =========================================================
+   PRODUTOS
+========================================================= */
+
 function categories() {
+
   return [
     "Todos",
+
     ...new Set(
-      state.products.map(p => p.category)
+      state.products.map(
+        p => p.category
+      )
     )
+
   ];
 }
 
 function filtered() {
-  const q =
-    state.search.toLowerCase().trim();
 
-  return state.products.filter(p =>
-    (
-      state.category === "Todos" ||
-      p.category === state.category
-    ) &&
-    (
-      !q ||
-      p.name.toLowerCase().includes(q) ||
-      String(
-        p.description || ""
+  const q =
+    state.search
+      .toLowerCase()
+      .trim();
+
+  return state.products.filter(
+    p =>
+
+      (
+        state.category ===
+        "Todos" ||
+
+        p.category ===
+        state.category
       )
-        .toLowerCase()
-        .includes(q)
-    ) &&
-    p.available
+
+      &&
+
+      (
+        !q ||
+
+        p.name
+          .toLowerCase()
+          .includes(q)
+
+        ||
+
+        String(
+          p.description || ""
+        )
+          .toLowerCase()
+          .includes(q)
+      )
+
+      &&
+
+      p.available
   );
 }
 
 function add(p) {
-  const x = state.cart.find(
-    i => i.id === p.id
-  );
+
+  const x =
+    state.cart.find(
+      i => i.id === p.id
+    );
 
   if (x) {
+
     x.qty++;
+
   } else {
+
     state.cart.push({
+
       id: p.id,
+
       name: p.name,
-      price: Number(p.price),
+
+      price:
+        Number(p.price),
+
       qty: 1
+
     });
+
   }
 
   render();
 }
 
-function changeQty(id, d) {
-  const x = state.cart.find(
-    i => i.id === id
-  );
+function changeQty(
+  id,
+  d
+) {
+
+  const x =
+    state.cart.find(
+      i => i.id === id
+    );
 
   if (!x) return;
 
   x.qty += d;
 
   if (x.qty <= 0) {
+
     state.cart =
       state.cart.filter(
         i => i.id !== id
       );
+
   }
 
   render();
 }
 
+
+/* =========================================================
+   TELA PRINCIPAL
+========================================================= */
+
 function render() {
-  document.getElementById("app").innerHTML = `
+
+  document.getElementById(
+    "app"
+  ).innerHTML = `
+
     <div class="pdv">
 
-     <header class="topbar">
+      <header class="topbar">
 
-  <div class="brand">
+        <div class="brand">
 
-    <img
-      class="brand-logo"
-      src="${LOGO_URL}"
-      alt="Panificadora Carvalho"
-    >
+          <img
+            class="brand-logo"
+            src="${LOGO_URL}"
+            alt="Panificadora Carvalho"
+          >
 
-    <div class="brand-info">
-      <strong>Panificadora Carvalho</strong>
-      <span>PDV - Ponto de Venda</span>
-      <small>Qualidade e sabor todos os dias!</small>
-    </div>
+          <div class="brand-info">
 
-  </div>
+            <strong>
+              Panificadora Carvalho
+            </strong>
+
+            <span>
+              PDV - Ponto de Venda
+            </span>
+
+            <small>
+              Qualidade e sabor
+              todos os dias!
+            </small>
+
+          </div>
+
+        </div>
 
         <div class="top-actions">
 
@@ -351,18 +657,24 @@ function render() {
                 : "closed"
             }"
           >
+
             ${
               state.store?.is_open
                 ? "● Loja aberta"
                 : "● Loja fechada"
             }
+
           </span>
 
-          <button id="refreshBtn">
+          <button
+            id="refreshBtn"
+          >
             Atualizar
           </button>
 
-          <button id="logoutBtn">
+          <button
+            id="logoutBtn"
+          >
             Sair
           </button>
 
@@ -370,51 +682,74 @@ function render() {
 
       </header>
 
+
       <div class="workspace">
+
 
         <main class="catalog">
 
+
           <div class="toolbar">
+
             <input
               class="search"
               id="search"
               placeholder="🔎 Buscar produto..."
               value="${esc(state.search)}"
             >
+
           </div>
+
 
           <div class="categories">
 
-            ${categories()
-              .map(c => `
-                <button
-                  class="cat ${
-                    c === state.category
-                      ? "active"
-                      : ""
-                  }"
-                  data-cat="${esc(c)}"
-                >
-                  ${esc(c)}
-                </button>
-              `)
-              .join("")}
+            ${
+              categories()
+                .map(c => `
+
+                  <button
+                    class="cat ${
+                      c ===
+                      state.category
+                        ? "active"
+                        : ""
+                    }"
+                    data-cat="${esc(c)}"
+                  >
+
+                    ${esc(c)}
+
+                  </button>
+
+                `)
+                .join("")
+            }
 
           </div>
+
 
           <div class="products">
 
             ${
               filtered()
                 .map(p => `
-                  <article class="product">
-                  
-                  <img
-  class="product-image"
-  src="${productImage(p.image_url)}"
-  alt="${esc(p.name)}"
-  onerror="this.src='${LOGO_URL}'"
->
+
+                  <article
+                    class="product"
+                  >
+
+                    <img
+                      class="product-image"
+                      src="${productImage(
+                        p.image_url
+                      )}"
+                      alt="${esc(
+                        p.name
+                      )}"
+                      onerror="
+                        this.src='${LOGO_URL}'
+                      "
+                    >
 
                     <h3>
                       ${esc(p.name)}
@@ -422,12 +757,17 @@ function render() {
 
                     <p>
                       ${esc(
-                        p.description || ""
+                        p.description ||
+                        ""
                       )}
                     </p>
 
-                    <div class="price">
-                      ${money(p.price)}
+                    <div
+                      class="price"
+                    >
+                      ${money(
+                        p.price
+                      )}
                     </div>
 
                     <button
@@ -437,13 +777,19 @@ function render() {
                     </button>
 
                   </article>
+
                 `)
                 .join("")
+
               ||
+
               `
+
                 <div class="empty">
-                  Nenhum produto encontrado.
+                  Nenhum produto
+                  encontrado.
                 </div>
+
               `
             }
 
@@ -451,115 +797,189 @@ function render() {
 
         </main>
 
-        <aside class="cart-panel">
 
-          <div class="cart-head">
-            <h2>Pedido atual</h2>
+        <aside
+          class="cart-panel"
+        >
+
+          <div
+            class="cart-head"
+          >
+
+            <h2>
+              Pedido atual
+            </h2>
+
             <strong>
-              ${cartCount()} item(ns)
+              ${cartCount()}
+              item(ns)
             </strong>
+
           </div>
 
-          <div class="cart-items">
+
+          <div
+            class="cart-items"
+          >
 
             ${
               state.cart.length
-                ? state.cart
-                    .map(i => `
-                      <div class="cart-item">
 
-                        <div>
+                ?
 
-                          <div class="cart-name">
-                            ${esc(i.name)}
-                          </div>
+                state.cart
+                  .map(i => `
 
-                          <div class="cart-sub">
-                            ${money(i.price)} cada
-                          </div>
+                    <div
+                      class="cart-item"
+                    >
 
-                          <div class="qty">
+                      <div>
 
-                            <button
-                              data-minus="${i.id}"
-                            >
-                              −
-                            </button>
-
-                            <b>${i.qty}</b>
-
-                            <button
-                              data-plus="${i.id}"
-                            >
-                              +
-                            </button>
-
-                          </div>
-
+                        <div
+                          class="cart-name"
+                        >
+                          ${esc(
+                            i.name
+                          )}
                         </div>
 
-                        <div style="text-align:right">
+                        <div
+                          class="cart-sub"
+                        >
+                          ${money(
+                            i.price
+                          )}
+                          cada
+                        </div>
 
-                          <b>
-                            ${money(
-                              i.price * i.qty
-                            )}
-                          </b>
-
-                          <br>
+                        <div
+                          class="qty"
+                        >
 
                           <button
-                            class="remove"
-                            data-remove="${i.id}"
+                            data-minus="${i.id}"
                           >
-                            remover
+                            −
+                          </button>
+
+                          <b>
+                            ${i.qty}
+                          </b>
+
+                          <button
+                            data-plus="${i.id}"
+                          >
+                            +
                           </button>
 
                         </div>
 
                       </div>
-                    `)
-                    .join("")
-                : `
-                    <div class="empty">
-                      Seu pedido está vazio.
-                      <br>
-                      Toque em um produto
-                      para adicionar.
+
+
+                      <div
+                        style="
+                          text-align:right
+                        "
+                      >
+
+                        <b>
+                          ${money(
+                            i.price *
+                            i.qty
+                          )}
+                        </b>
+
+                        <br>
+
+                        <button
+                          class="remove"
+                          data-remove="${i.id}"
+                        >
+                          remover
+                        </button>
+
+                      </div>
+
                     </div>
-                  `
+
+                  `)
+                  .join("")
+
+                :
+
+                `
+
+                  <div
+                    class="empty"
+                  >
+                    Seu pedido
+                    está vazio.
+                    <br>
+                    Toque em um produto
+                    para adicionar.
+                  </div>
+
+                `
             }
 
           </div>
 
-          <div class="cart-foot">
 
-            <div class="total">
-              <span>Total</span>
+          <div
+            class="cart-foot"
+          >
+
+            <div
+              class="total"
+            >
+
               <span>
-                ${money(cartTotal())}
+                Total
               </span>
+
+              <span>
+                ${money(
+                  cartTotal()
+                )}
+              </span>
+
             </div>
+
 
             <button
               class="checkout"
               id="checkout"
-              ${state.cart.length ? "" : "disabled"}
+              ${
+                state.cart.length
+                  ? ""
+                  : "disabled"
+              }
             >
               Finalizar venda
             </button>
 
-            <div class="quick">
 
-              <button id="clearCart">
+            <div
+              class="quick"
+            >
+
+              <button
+                id="clearCart"
+              >
                 Limpar
               </button>
 
-              <button id="salesBtn">
+              <button
+                id="salesBtn"
+              >
                 Vendas de hoje
               </button>
 
-              <button id="printTestBtn">
+              <button
+                id="printTestBtn"
+              >
                 🖨️ Testar impressora
               </button>
 
@@ -572,125 +992,200 @@ function render() {
       </div>
 
     </div>
+
   `;
+
+
+  /* BOTÕES */
 
   document.getElementById(
     "logoutBtn"
   ).onclick = logout;
+
 
   document.getElementById(
     "refreshBtn"
   ).onclick = async () => {
 
     state.products =
-      await apiGet("/products");
+      await apiGet(
+        "/products"
+      );
 
     state.store =
-      await apiGet("/store/status");
+      await apiGet(
+        "/store/status"
+      );
 
     try {
+
       state.sales =
-        await apiGet("/orders");
+        await apiGet(
+          "/orders"
+        );
+
     } catch (_) {}
 
     render();
+
   };
+
 
   document.getElementById(
     "search"
   ).oninput = e => {
+
     state.search =
       e.target.value;
 
     render();
+
   };
 
+
   document
-    .querySelectorAll("[data-cat]")
+    .querySelectorAll(
+      "[data-cat]"
+    )
     .forEach(b => {
+
       b.onclick = () => {
+
         state.category =
           b.dataset.cat;
 
         render();
+
       };
+
     });
 
+
   document
-    .querySelectorAll("[data-add]")
+    .querySelectorAll(
+      "[data-add]"
+    )
     .forEach(b => {
+
       b.onclick = () => {
+
         add(
           state.products.find(
-            p => p.id === b.dataset.add
+            p =>
+              p.id ===
+              b.dataset.add
           )
         );
+
       };
+
     });
 
+
   document
-    .querySelectorAll("[data-minus]")
+    .querySelectorAll(
+      "[data-minus]"
+    )
     .forEach(b => {
+
       b.onclick = () =>
         changeQty(
           b.dataset.minus,
           -1
         );
+
     });
 
+
   document
-    .querySelectorAll("[data-plus]")
+    .querySelectorAll(
+      "[data-plus]"
+    )
     .forEach(b => {
+
       b.onclick = () =>
         changeQty(
           b.dataset.plus,
           1
         );
+
     });
 
+
   document
-    .querySelectorAll("[data-remove]")
+    .querySelectorAll(
+      "[data-remove]"
+    )
     .forEach(b => {
+
       b.onclick = () => {
+
         state.cart =
           state.cart.filter(
-            i => i.id !== b.dataset.remove
+            i =>
+              i.id !==
+              b.dataset.remove
           );
 
         render();
+
       };
+
     });
+
 
   document.getElementById(
     "clearCart"
   ).onclick = () => {
+
     state.cart = [];
+
     render();
+
   };
+
 
   document.getElementById(
     "checkout"
-  ).onclick = openCheckout;
+  ).onclick =
+    openCheckout;
+
 
   document.getElementById(
     "salesBtn"
-  ).onclick = openSales;
+  ).onclick =
+    openSales;
+
 
   document.getElementById(
     "printTestBtn"
-  ).onclick = imprimirTesteMobilePrint;
+  ).onclick =
+    imprimirTesteMobilePrint;
 }
 
-function modal(html) {
-  const e =
-    document.createElement("div");
 
-  e.className = "modal-back";
+/* =========================================================
+   MODAL
+========================================================= */
+
+function modal(html) {
+
+  const e =
+    document.createElement(
+      "div"
+    );
+
+  e.className =
+    "modal-back";
 
   e.innerHTML = `
+
     <div class="modal">
+
       ${html}
+
     </div>
+
   `;
 
   document.body.appendChild(e);
@@ -698,47 +1193,81 @@ function modal(html) {
   return e;
 }
 
+
+/* =========================================================
+   FINALIZAR VENDA
+========================================================= */
+
 function openCheckout() {
 
   const m = modal(`
-    <div class="modal-head">
+
+    <div
+      class="modal-head"
+    >
 
       <div>
-        <h2>Finalizar venda</h2>
+
+        <h2>
+          Finalizar venda
+        </h2>
 
         <p>
+
           Total:
+
           <b>
-            ${money(cartTotal())}
+            ${money(
+              cartTotal()
+            )}
           </b>
+
         </p>
+
       </div>
 
-      <button class="close">
+
+      <button
+        class="close"
+      >
         ×
       </button>
 
     </div>
 
-    <div class="form-grid">
+
+    <div
+      class="form-grid"
+    >
 
       <label>
+
         Cliente (opcional)
+
         <input
           id="client"
           placeholder="Nome do cliente"
         >
+
       </label>
 
+
       <label>
+
         Telefone (opcional)
+
         <input
           id="phone"
           placeholder="(93) 99999-9999"
         >
+
       </label>
 
-      <label class="full">
+
+      <label
+        class="full"
+      >
+
         Observação
 
         <textarea
@@ -749,20 +1278,32 @@ function openCheckout() {
 
       </label>
 
-      <div class="full">
+
+      <div
+        class="full"
+      >
 
         <b>
           Forma de pagamento
         </b>
 
-        <div class="payment">
+
+        <div
+          class="payment"
+        >
 
           ${
-            ["Dinheiro", "Pix", "Cartão"]
+            [
+              "Dinheiro",
+              "Pix",
+              "Cartão"
+            ]
               .map(p => `
+
                 <button
                   class="${
-                    p === state.payment
+                    p ===
+                    state.payment
                       ? "active"
                       : ""
                   }"
@@ -770,6 +1311,7 @@ function openCheckout() {
                 >
                   ${p}
                 </button>
+
               `)
               .join("")
           }
@@ -778,6 +1320,7 @@ function openCheckout() {
 
       </div>
 
+
       <div
         id="cashArea"
         class="full"
@@ -785,17 +1328,22 @@ function openCheckout() {
 
     </div>
 
+
     <button
       class="primary"
       id="confirmSale"
     >
       Confirmar venda
     </button>
+
   `);
+
 
   m.querySelector(
     ".close"
-  ).onclick = () => m.remove();
+  ).onclick = () =>
+    m.remove();
+
 
   m.querySelectorAll(
     "[data-pay]"
@@ -809,19 +1357,31 @@ function openCheckout() {
       m.remove();
 
       openCheckout();
+
     };
 
   });
 
-  const ca =
-    m.querySelector("#cashArea");
 
-  if (state.payment === "Dinheiro") {
+  const ca =
+    m.querySelector(
+      "#cashArea"
+    );
+
+
+  if (
+    state.payment ===
+    "Dinheiro"
+  ) {
 
     ca.innerHTML = `
-      <div class="change">
+
+      <div
+        class="change"
+      >
 
         <label>
+
           Valor recebido
 
           <input
@@ -834,15 +1394,25 @@ function openCheckout() {
 
         </label>
 
-        <div style="margin-top:8px">
+
+        <div
+          style="
+            margin-top:8px
+          "
+        >
+
           Troco:
+
           <b id="change">
             R$ 0,00
           </b>
+
         </div>
 
       </div>
+
     `;
+
 
     m.querySelector(
       "#received"
@@ -850,123 +1420,195 @@ function openCheckout() {
 
       m.querySelector(
         "#change"
-      ).textContent = money(
-        Math.max(
-          0,
-          Number(e.target.value) -
-          cartTotal()
-        )
-      );
+      ).textContent =
+        money(
+          Math.max(
+            0,
+            Number(
+              e.target.value
+            ) -
+            cartTotal()
+          )
+        );
 
     };
+
   }
+
 
   m.querySelector(
     "#confirmSale"
-  ).onclick = async () => {
+  ).onclick =
+    async () => {
 
-    const received =
-      Number(
-        m.querySelector(
-          "#received"
-        )?.value || 0
-      );
+      const received =
+        Number(
+          m.querySelector(
+            "#received"
+          )?.value || 0
+        );
 
-    if (
-      state.payment === "Dinheiro" &&
-      received < cartTotal()
-    ) {
-      alert(
-        "Informe um valor recebido igual ou maior que o total."
-      );
-      return;
-    }
 
-    const order = {
-      customer_name:
-        m.querySelector(
-          "#client"
-        ).value.trim() ||
-        "Cliente balcão",
+      if (
+        state.payment ===
+          "Dinheiro" &&
 
-      phone:
-        m.querySelector(
-          "#phone"
-        ).value.trim() ||
-        "PDV",
+        received <
+          cartTotal()
+      ) {
 
-      fulfillment: "retirada",
+        alert(
+          "Informe um valor recebido igual ou maior que o total."
+        );
 
-      address: null,
+        return;
 
-      payment:
-        state.payment,
+      }
 
-      items:
-        state.cart.map(i => ({
-          name: i.name,
-          quantity: i.qty,
-          unit_price: i.price
-        })),
 
-      total: cartTotal(),
+      const order = {
 
-      notes:
-        m.querySelector(
-          "#notes"
-        ).value.trim() ||
-        null
-    };
+        customer_name:
+          m.querySelector(
+            "#client"
+          ).value.trim() ||
+          "Cliente balcão",
 
-    try {
+        phone:
+          m.querySelector(
+            "#phone"
+          ).value.trim() ||
+          "PDV",
 
-      await apiSend(
-        "/orders",
-        "POST",
-        order
-      );
+        fulfillment:
+          "retirada",
 
-      const total =
-        cartTotal();
+        address:
+          null,
 
-      const troco =
-        state.payment === "Dinheiro"
-          ? Math.max(
-              0,
-              received - total
-            )
-          : 0;
+        payment:
+          state.payment,
 
-      state.cart = [];
+        items:
+          state.cart.map(
+            i => ({
+              name:
+                i.name,
 
-      state.payment =
-        "Dinheiro";
+              quantity:
+                i.qty,
 
-      m.remove();
+              unit_price:
+                i.price
+            })
+          ),
 
-      alert(
-        `Venda registrada com sucesso!
-Total: ${money(total)}${
-          troco
-            ? `\nTroco: ${money(troco)}`
-            : ""
-        }`
-      );
+        total:
+          cartTotal(),
+
+        notes:
+          m.querySelector(
+            "#notes"
+          ).value.trim() ||
+          null
+
+      };
+
 
       try {
-        state.sales =
-          await apiGet("/orders");
-      } catch (_) {}
 
-      render();
+        /* REGISTRA A VENDA */
 
-    } catch (e) {
+        await apiSend(
+          "/orders",
+          "POST",
+          order
+        );
 
-      alert(e.message);
 
-    }
-  };
+        const total =
+          cartTotal();
+
+
+        const troco =
+          state.payment ===
+          "Dinheiro"
+
+            ?
+
+            Math.max(
+              0,
+              received -
+              total
+            )
+
+            :
+
+            0;
+
+
+        /* =================================================
+           IMPRESSÃO AUTOMÁTICA
+        ================================================= */
+
+        imprimirPedidoMobilePrint(
+          order,
+          total,
+          troco
+        );
+
+
+        /* LIMPA O CARRINHO */
+
+        state.cart = [];
+
+
+        state.payment =
+          "Dinheiro";
+
+
+        m.remove();
+
+
+        alert(
+          `Venda registrada com sucesso!
+Total: ${money(total)}${
+            troco
+              ? `\nTroco: ${money(troco)}`
+              : ""
+          }`
+        );
+
+
+        try {
+
+          state.sales =
+            await apiGet(
+              "/orders"
+            );
+
+        } catch (_) {}
+
+
+        render();
+
+
+      } catch (e) {
+
+        alert(
+          e.message
+        );
+
+      }
+
+    };
+
 }
+
+
+/* =========================================================
+   VENDAS DE HOJE
+========================================================= */
 
 function openSales() {
 
@@ -975,24 +1617,41 @@ function openSales() {
       .toISOString()
       .slice(0, 10);
 
+
   const sales =
     state.sales.filter(
       o =>
-        (o.created_at || "")
-          .slice(0, 10) === today &&
-        o.status !== "cancelado"
+
+        (
+          o.created_at ||
+          ""
+        )
+          .slice(0, 10) ===
+          today
+
+        &&
+
+        o.status !==
+          "cancelado"
     );
+
 
   const total =
     sales.reduce(
       (s, o) =>
-        s + Number(o.total || 0),
+        s +
+        Number(
+          o.total || 0
+        ),
       0
     );
 
+
   const m = modal(`
 
-    <div class="modal-head">
+    <div
+      class="modal-head"
+    >
 
       <div>
 
@@ -1001,63 +1660,117 @@ function openSales() {
         </h2>
 
         <p>
+
           Total:
-          <b>${money(total)}</b>
-          • ${sales.length} venda(s)
+
+          <b>
+            ${money(total)}
+          </b>
+
+          •
+
+          ${sales.length}
+          venda(s)
+
         </p>
 
       </div>
 
-      <button class="close">
+
+      <button
+        class="close"
+      >
         ×
       </button>
 
     </div>
 
-    <div class="sales">
+
+    <div
+      class="sales"
+    >
 
       ${
         sales.length
-          ? sales
-              .slice(0, 50)
-              .map(o => `
-                <div class="sale-row">
 
-                  <span>
-                    #${esc(
-                      (o.order_id || "")
-                        .slice(-6)
-                    )}
-                    •
-                    ${esc(
-                      o.payment || ""
-                    )}
-                  </span>
+          ?
 
-                  <b>
-                    ${money(o.total)}
-                  </b>
+          sales
+            .slice(0, 50)
+            .map(o => `
 
-                </div>
-              `)
-              .join("")
-          : `
-            <div class="empty">
-              Nenhuma venda registrada hoje.
+              <div
+                class="sale-row"
+              >
+
+                <span>
+
+                  #
+
+                  ${esc(
+                    (
+                      o.order_id ||
+                      ""
+                    ).slice(-6)
+                  )}
+
+                  •
+
+                  ${esc(
+                    o.payment ||
+                    ""
+                  )}
+
+                </span>
+
+
+                <b>
+                  ${money(
+                    o.total
+                  )}
+                </b>
+
+              </div>
+
+            `)
+            .join("")
+
+          :
+
+          `
+
+            <div
+              class="empty"
+            >
+              Nenhuma venda
+              registrada hoje.
             </div>
+
           `
       }
 
     </div>
+
   `);
+
 
   m.querySelector(
     ".close"
-  ).onclick = () => m.remove();
+  ).onclick = () =>
+    m.remove();
 }
 
+
+/* =========================================================
+   INICIAR
+========================================================= */
+
 if (state.token) {
+
   init();
+
 } else {
+
   renderLogin();
+
 }
