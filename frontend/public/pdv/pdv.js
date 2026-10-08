@@ -3,60 +3,56 @@ const TOKEN_KEY = "padaria_admin_token";
 
 const LOGO_URL = "https://customer-assets-v7afamib.emergentagent.net/job_padaria-pedidos/artifacts/mi6urdta_WhatsApp%20Image%202026-09-18%20at%2008.12.49.jpeg";
 
-/* =========================================================
-   IMPRESSÃO - MOBILE PRINT UTIL
-========================================================= */
-
-function abrirMobilePrintUtil(html) {
-  const bytes = new TextEncoder().encode(html);
-  let binary = "";
-
-  bytes.forEach(byte => {
-    binary += String.fromCharCode(byte);
-  });
-
-  const base64 = btoa(binary);
-
-  const url =
-    `com.samathosoft.webprint://#deb64#${base64}`;
-
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.style.display = "none";
-
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+function criarUrlMobilePrintUtil(conteudo) {
+  return `com.samathosoft.webprint://${conteudo}`;
 }
 
-function imprimirPedidoMobilePrint(order, total, troco = 0) {
+function abrirMobilePrintUtil(conteudo) {
+  // IMPORTANTE: esta função deve ser chamada diretamente por um toque/clique do usuário.
+  // O iOS pode bloquear a abertura do aplicativo quando ela acontece depois de um await/fetch.
+  window.location.href = criarUrlMobilePrintUtil(conteudo);
+}
 
+function imprimirTesteMobilePrint() {
+  const conteudo =
+    "#escps#" +
+    "#sl#PANIFICADORA CARVALHO#/sl##lf#" +
+    "#sl#TESTE DE IMPRESSAO#/sl##lf#" +
+    "--------------------------------#lf#" +
+    "Impressora: Bluetooth#lf#" +
+    "Papel: 80mm#lf#" +
+    "ESC/POS: OK#lf#" +
+    "--------------------------------#lf#" +
+    "#sl#IMPRESSAO FUNCIONANDO!#/sl##lf##lf#";
+
+  abrirMobilePrintUtil(conteudo);
+}
+
+function textoSeguroImpressao(valor) {
+  return String(valor ?? "")
+    .replace(/[\r\n]+/g, " ")
+    .trim();
+}
+
+function criarUrlImpressaoPedido(order, total, troco = 0) {
   let texto = "";
 
-  texto += "PANIFICADORA CARVALHO\n";
-  texto += "       PEDIDO / VENDA\n";
-  texto += "------------------------------\n";
-
-  texto += "Cliente: " + order.customer_name + "\n";
-  texto += "Pagamento: " + order.payment + "\n";
+  texto += "#escps#";
+  texto += "#sl#PANIFICADORA CARVALHO#/sl##lf#";
+  texto += "#sl#PEDIDO / VENDA#/sl##lf#";
+  texto += "--------------------------------#lf#";
+  texto += "Cliente: " + textoSeguroImpressao(order.customer_name) + "#lf#";
+  texto += "Pagamento: " + textoSeguroImpressao(order.payment) + "#lf#";
 
   if (order.notes) {
-    texto += "Obs: " + order.notes + "\n";
+    texto += "Obs: " + textoSeguroImpressao(order.notes) + "#lf#";
   }
 
-  texto += "\n";
+  texto += "#lf#";
 
   order.items.forEach(item => {
-
-    const subtotal =
-      Number(item.unit_price) *
-      Number(item.quantity);
-
-    texto +=
-      item.name +
-      "\n";
-
+    const subtotal = Number(item.unit_price) * Number(item.quantity);
+    texto += textoSeguroImpressao(item.name) + "#lf#";
     texto +=
       "  " +
       item.quantity +
@@ -64,140 +60,71 @@ function imprimirPedidoMobilePrint(order, total, troco = 0) {
       money(item.unit_price) +
       " = " +
       money(subtotal) +
-      "\n";
-
+      "#lf#";
   });
 
-  texto += "\n";
-  texto += "------------------------------\n";
-  texto += "TOTAL: " + money(total) + "\n";
+  texto += "#lf#";
+  texto += "--------------------------------#lf#";
+  texto += "#sl#TOTAL: " + money(total) + "#/sl##lf#";
 
   if (troco > 0) {
-    texto +=
-      "TROCO: " +
-      money(troco) +
-      "\n";
+    texto += "#sl#TROCO: " + money(troco) + "#/sl##lf#";
   }
 
-  texto += "------------------------------\n";
-  texto += "\n";
-  texto += "Obrigado pela preferencia!\n";
-  texto += "Volte sempre!\n";
-  texto += "\n\n";
+  texto += "--------------------------------#lf#";
+  texto += "#lf#";
+  texto += "Obrigado pela preferencia!#lf#";
+  texto += "Volte sempre!#lf##lf##lf#";
 
-  /*
-    #sl# = impressão em tamanho maior
-    #lf# = quebra de linha
-  */
-
-  const conteudo =
-    texto
-      .split("\n")
-      .map(linha =>
-        `#sl#${linha}#/sl##lf#`
-      )
-      .join("");
-
-  const url =
-    `com.samathosoft.webprint://#escps#${conteudo}`;
-
-  const link =
-    document.createElement("a");
-
-  link.href = url;
-  link.style.display = "none";
-
-  document.body.appendChild(link);
-
-  link.click();
-
-  link.remove();
+  return criarUrlMobilePrintUtil(texto);
 }
 
-function imprimirPedidoMobilePrint(order, total, troco = 0) {
+function mostrarSucessoVenda(order, total, troco = 0) {
+  const printUrl = criarUrlImpressaoPedido(order, total, troco);
 
-  const itens = order.items.map(item => `
-    <div>
-      ${esc(item.name)}
-      x${item.quantity}
-      &nbsp;
-      ${money(item.unit_price * item.quantity)}
-    </div>
-  `).join("");
-
-  const html = `
-    <div style="text-align:center">
-
-      <b style="font-size:18px">
-        PANIFICADORA CARVALHO
-      </b>
-
-      <br>
-
-      <b>PEDIDO / VENDA</b>
-
-      <br>
-
-      ------------------------------<br>
-
+  const m = modal(`
+    <div class="modal-head">
+      <div>
+        <h2>✅ Venda registrada!</h2>
+        <p>
+          Total: <b>${money(total)}</b>
+          ${troco > 0 ? ` • Troco: <b>${money(troco)}</b>` : ""}
+        </p>
+      </div>
     </div>
 
-    <b>Cliente:</b>
-    ${esc(order.customer_name)}
-    <br>
+    <div style="padding:12px 0 18px; text-align:center;">
+      <p style="margin:0 0 16px;">
+        A venda foi salva. Agora toque no botão abaixo para abrir o Mobile Print Util e imprimir o pedido.
+      </p>
 
-    <b>Pagamento:</b>
-    ${esc(order.payment)}
-    <br>
+      <a
+        id="printSaleBtn"
+        class="primary"
+        href="#"
+        style="display:block; text-decoration:none; text-align:center;"
+      >
+        🖨️ Imprimir pedido
+      </a>
 
-    ${
-      order.notes
-        ? `<b>Obs:</b> ${esc(order.notes)}<br>`
-        : ""
-    }
-
-    <br>
-
-    ${itens}
-
-    <br>
-
-    ------------------------------<br>
-
-    <b>
-      TOTAL: ${money(total)}
-    </b>
-
-    <br>
-
-    ${
-      troco > 0
-        ? `<b>Troco: ${money(troco)}</b><br>`
-        : ""
-    }
-
-    ------------------------------<br>
-
-    <div style="text-align:center">
-
-      Obrigado pela preferência!<br>
-      Volte sempre!
-
+      <button
+        id="closeSaleSuccess"
+        style="width:100%; margin-top:10px;"
+      >
+        Fechar
+      </button>
     </div>
+  `);
 
-    <br><br>
-  `;
+  // O href fica no próprio botão. Assim, quando o usuário tocar nele,
+  // o iOS considera a abertura do Mobile Print Util como uma ação do usuário.
+  const printBtn = m.querySelector("#printSaleBtn");
+  printBtn.href = printUrl;
 
-  abrirMobilePrintUtil(html);
+  m.querySelector("#closeSaleSuccess").onclick = () => m.remove();
 }
 
-
-/* =========================================================
-   UTILIDADES
-========================================================= */
-
-const productImage = url =>
-  url || LOGO_URL;
+const productImage = (url) => url || LOGO_URL;
 
 const state = {
   products: [],
@@ -217,84 +144,46 @@ const money = n =>
   });
 
 const esc = s =>
-  String(s ?? "").replace(
-    /[&<>"']/g,
-    m => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;"
-    }[m])
-  );
+  String(s ?? "").replace(/[&<>"']/g, m => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[m]));
 
 const headers = () =>
   state.token
-    ? {
-        Authorization:
-          `Bearer ${state.token}`
-      }
+    ? { Authorization: `Bearer ${state.token}` }
     : {};
 
 const cartTotal = () =>
-  state.cart.reduce(
-    (s, i) =>
-      s + i.price * i.qty,
-    0
-  );
+  state.cart.reduce((s, i) => s + i.price * i.qty, 0);
 
 const cartCount = () =>
-  state.cart.reduce(
-    (s, i) =>
-      s + i.qty,
-    0
-  );
-
-
-/* =========================================================
-   LOGIN
-========================================================= */
+  state.cart.reduce((s, i) => s + i.qty, 0);
 
 function renderLogin(error = "") {
-
   document.getElementById("app").innerHTML = `
-
     <div class="login-wrap">
-
       <div class="login-card">
 
         <div class="logo-title">
-
-          <div class="mark">
-            🥖
-          </div>
-
+          <div class="mark">🥖</div>
           <div>
-
             <h2>PDV</h2>
-
-            <p>
-              Panificadora Carvalho
-            </p>
-
+            <p>Panificadora Carvalho</p>
           </div>
-
         </div>
 
-        <label>
-          E-mail
-        </label>
-
+        <label>E-mail</label>
         <input
           id="loginEmail"
           type="email"
           placeholder="E-mail do administrador"
         >
 
-        <label>
-          Senha
-        </label>
-
+        <label>Senha</label>
         <input
           id="loginPassword"
           type="password"
@@ -303,86 +192,53 @@ function renderLogin(error = "") {
 
         ${
           error
-            ? `<div class="error">
-                ${esc(error)}
-               </div>`
+            ? `<div class="error">${esc(error)}</div>`
             : ""
         }
 
-        <button
-          class="primary"
-          id="loginBtn"
-        >
+        <button class="primary" id="loginBtn">
           Entrar no PDV
         </button>
 
       </div>
-
     </div>
-
   `;
 
-  document.getElementById(
-    "loginBtn"
-  ).onclick = login;
+  document.getElementById("loginBtn").onclick = login;
 
-  document.getElementById(
-    "loginPassword"
-  ).onkeydown = e => {
-
-    if (e.key === "Enter") {
-      login();
-    }
-
+  document.getElementById("loginPassword").onkeydown = e => {
+    if (e.key === "Enter") login();
   };
 }
 
 async function login() {
-
   const email =
-    document
-      .getElementById("loginEmail")
-      .value
-      .trim();
+    document.getElementById("loginEmail").value.trim();
 
   const password =
-    document
-      .getElementById("loginPassword")
-      .value;
+    document.getElementById("loginPassword").value;
 
   try {
+    const r = await fetch(`${API}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email,
+        password
+      })
+    });
 
-    const r = await fetch(
-      `${API}/auth/login`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body: JSON.stringify({
-          email,
-          password
-        })
-      }
-    );
-
-    const d =
-      await r.json();
+    const d = await r.json();
 
     if (!r.ok) {
-
       throw new Error(
-        d.detail ||
-        "E-mail ou senha inválidos"
+        d.detail || "E-mail ou senha inválidos"
       );
-
     }
 
-    state.token =
-      d.token;
+    state.token = d.token;
 
     localStorage.setItem(
       TOKEN_KEY,
@@ -392,158 +248,85 @@ async function login() {
     await init();
 
   } catch (e) {
-
-    renderLogin(
-      e.message
-    );
-
+    renderLogin(e.message);
   }
 }
-
-
-/* =========================================================
-   API
-========================================================= */
 
 async function apiGet(path) {
-
-  const r =
-    await fetch(
-      `${API}${path}`,
-      {
-        headers: headers()
-      }
-    );
+  const r = await fetch(`${API}${path}`, {
+    headers: headers()
+  });
 
   if (r.status === 401) {
-
     logout();
-
-    throw new Error(
-      "Sessão expirada"
-    );
-
+    throw new Error("Sessão expirada");
   }
 
-  const d =
-    await r.json();
+  const d = await r.json();
 
   if (!r.ok) {
-
     throw new Error(
-      d.detail ||
-      "Erro na API"
+      d.detail || "Erro na API"
     );
-
   }
 
   return d;
 }
 
-async function apiSend(
-  path,
-  method,
-  body
-) {
-
-  const r =
-    await fetch(
-      `${API}${path}`,
-      {
-        method,
-
-        headers: {
-          "Content-Type":
-            "application/json",
-          ...headers()
-        },
-
-        body:
-          JSON.stringify(body)
-      }
-    );
+async function apiSend(path, method, body) {
+  const r = await fetch(`${API}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers()
+    },
+    body: JSON.stringify(body)
+  });
 
   if (r.status === 401) {
-
     logout();
-
-    throw new Error(
-      "Sessão expirada"
-    );
-
+    throw new Error("Sessão expirada");
   }
 
-  const d =
-    await r.json();
+  const d = await r.json();
 
   if (!r.ok) {
-
     throw new Error(
-      d.detail ||
-      "Erro na API"
+      d.detail || "Erro na API"
     );
-
   }
 
   return d;
 }
-
-
-/* =========================================================
-   INICIALIZAÇÃO
-========================================================= */
 
 async function init() {
-
   try {
-
-    await apiGet(
-      "/auth/me"
-    );
+    await apiGet("/auth/me");
 
     [
       state.products,
       state.store
     ] = await Promise.all([
-
-      apiGet(
-        "/products"
-      ),
-
-      apiGet(
-        "/store/status"
-      )
-
+      apiGet("/products"),
+      apiGet("/store/status")
     ]);
 
     try {
-
-      state.sales =
-        await apiGet(
-          "/orders"
-        );
-
+      state.sales = await apiGet("/orders");
     } catch (_) {
-
       state.sales = [];
-
     }
 
     render();
 
   } catch (e) {
-
     renderLogin(
-      state.token
-        ? e.message
-        : ""
+      state.token ? e.message : ""
     );
-
   }
 }
 
 function logout() {
-
   state.token = "";
 
   localStorage.removeItem(
@@ -553,165 +336,96 @@ function logout() {
   renderLogin();
 }
 
-
-/* =========================================================
-   PRODUTOS
-========================================================= */
-
 function categories() {
-
   return [
     "Todos",
-
     ...new Set(
-      state.products.map(
-        p => p.category
-      )
+      state.products.map(p => p.category)
     )
-
   ];
 }
 
 function filtered() {
-
   const q =
-    state.search
-      .toLowerCase()
-      .trim();
+    state.search.toLowerCase().trim();
 
-  return state.products.filter(
-    p =>
-
-      (
-        state.category ===
-        "Todos" ||
-
-        p.category ===
-        state.category
+  return state.products.filter(p =>
+    (
+      state.category === "Todos" ||
+      p.category === state.category
+    ) &&
+    (
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      String(
+        p.description || ""
       )
-
-      &&
-
-      (
-        !q ||
-
-        p.name
-          .toLowerCase()
-          .includes(q)
-
-        ||
-
-        String(
-          p.description || ""
-        )
-          .toLowerCase()
-          .includes(q)
-      )
-
-      &&
-
-      p.available
+        .toLowerCase()
+        .includes(q)
+    ) &&
+    p.available
   );
 }
 
 function add(p) {
-
-  const x =
-    state.cart.find(
-      i => i.id === p.id
-    );
+  const x = state.cart.find(
+    i => i.id === p.id
+  );
 
   if (x) {
-
     x.qty++;
-
   } else {
-
     state.cart.push({
-
       id: p.id,
-
       name: p.name,
-
-      price:
-        Number(p.price),
-
+      price: Number(p.price),
       qty: 1
-
     });
-
   }
 
   render();
 }
 
-function changeQty(
-  id,
-  d
-) {
-
-  const x =
-    state.cart.find(
-      i => i.id === id
-    );
+function changeQty(id, d) {
+  const x = state.cart.find(
+    i => i.id === id
+  );
 
   if (!x) return;
 
   x.qty += d;
 
   if (x.qty <= 0) {
-
     state.cart =
       state.cart.filter(
         i => i.id !== id
       );
-
   }
 
   render();
 }
 
-
-/* =========================================================
-   TELA PRINCIPAL
-========================================================= */
-
 function render() {
-
-  document.getElementById(
-    "app"
-  ).innerHTML = `
-
+  document.getElementById("app").innerHTML = `
     <div class="pdv">
 
-      <header class="topbar">
+     <header class="topbar">
 
-        <div class="brand">
+  <div class="brand">
 
-          <img
-            class="brand-logo"
-            src="${LOGO_URL}"
-            alt="Panificadora Carvalho"
-          >
+    <img
+      class="brand-logo"
+      src="${LOGO_URL}"
+      alt="Panificadora Carvalho"
+    >
 
-          <div class="brand-info">
+    <div class="brand-info">
+      <strong>Panificadora Carvalho</strong>
+      <span>PDV - Ponto de Venda</span>
+      <small>Qualidade e sabor todos os dias!</small>
+    </div>
 
-            <strong>
-              Panificadora Carvalho
-            </strong>
-
-            <span>
-              PDV - Ponto de Venda
-            </span>
-
-            <small>
-              Qualidade e sabor
-              todos os dias!
-            </small>
-
-          </div>
-
-        </div>
+  </div>
 
         <div class="top-actions">
 
@@ -722,24 +436,18 @@ function render() {
                 : "closed"
             }"
           >
-
             ${
               state.store?.is_open
                 ? "● Loja aberta"
                 : "● Loja fechada"
             }
-
           </span>
 
-          <button
-            id="refreshBtn"
-          >
+          <button id="refreshBtn">
             Atualizar
           </button>
 
-          <button
-            id="logoutBtn"
-          >
+          <button id="logoutBtn">
             Sair
           </button>
 
@@ -747,74 +455,51 @@ function render() {
 
       </header>
 
-
       <div class="workspace">
-
 
         <main class="catalog">
 
-
           <div class="toolbar">
-
             <input
               class="search"
               id="search"
               placeholder="🔎 Buscar produto..."
               value="${esc(state.search)}"
             >
-
           </div>
-
 
           <div class="categories">
 
-            ${
-              categories()
-                .map(c => `
-
-                  <button
-                    class="cat ${
-                      c ===
-                      state.category
-                        ? "active"
-                        : ""
-                    }"
-                    data-cat="${esc(c)}"
-                  >
-
-                    ${esc(c)}
-
-                  </button>
-
-                `)
-                .join("")
-            }
+            ${categories()
+              .map(c => `
+                <button
+                  class="cat ${
+                    c === state.category
+                      ? "active"
+                      : ""
+                  }"
+                  data-cat="${esc(c)}"
+                >
+                  ${esc(c)}
+                </button>
+              `)
+              .join("")}
 
           </div>
-
 
           <div class="products">
 
             ${
               filtered()
                 .map(p => `
-
-                  <article
-                    class="product"
-                  >
-
-                    <img
-                      class="product-image"
-                      src="${productImage(
-                        p.image_url
-                      )}"
-                      alt="${esc(
-                        p.name
-                      )}"
-                      onerror="
-                        this.src='${LOGO_URL}'
-                      "
-                    >
+                  <article class="product">
+                  
+                  <img
+  class="product-image"
+  src="${productImage(p.image_url)}"
+  alt="${esc(p.name)}"
+  onerror="this.src='${LOGO_URL}'"
+>
 
                     <h3>
                       ${esc(p.name)}
@@ -822,17 +507,12 @@ function render() {
 
                     <p>
                       ${esc(
-                        p.description ||
-                        ""
+                        p.description || ""
                       )}
                     </p>
 
-                    <div
-                      class="price"
-                    >
-                      ${money(
-                        p.price
-                      )}
+                    <div class="price">
+                      ${money(p.price)}
                     </div>
 
                     <button
@@ -842,19 +522,13 @@ function render() {
                     </button>
 
                   </article>
-
                 `)
                 .join("")
-
               ||
-
               `
-
                 <div class="empty">
-                  Nenhum produto
-                  encontrado.
+                  Nenhum produto encontrado.
                 </div>
-
               `
             }
 
@@ -862,189 +536,115 @@ function render() {
 
         </main>
 
+        <aside class="cart-panel">
 
-        <aside
-          class="cart-panel"
-        >
-
-          <div
-            class="cart-head"
-          >
-
-            <h2>
-              Pedido atual
-            </h2>
-
+          <div class="cart-head">
+            <h2>Pedido atual</h2>
             <strong>
-              ${cartCount()}
-              item(ns)
+              ${cartCount()} item(ns)
             </strong>
-
           </div>
 
-
-          <div
-            class="cart-items"
-          >
+          <div class="cart-items">
 
             ${
               state.cart.length
+                ? state.cart
+                    .map(i => `
+                      <div class="cart-item">
 
-                ?
+                        <div>
 
-                state.cart
-                  .map(i => `
+                          <div class="cart-name">
+                            ${esc(i.name)}
+                          </div>
 
-                    <div
-                      class="cart-item"
-                    >
+                          <div class="cart-sub">
+                            ${money(i.price)} cada
+                          </div>
 
-                      <div>
+                          <div class="qty">
 
-                        <div
-                          class="cart-name"
-                        >
-                          ${esc(
-                            i.name
-                          )}
+                            <button
+                              data-minus="${i.id}"
+                            >
+                              −
+                            </button>
+
+                            <b>${i.qty}</b>
+
+                            <button
+                              data-plus="${i.id}"
+                            >
+                              +
+                            </button>
+
+                          </div>
+
                         </div>
 
-                        <div
-                          class="cart-sub"
-                        >
-                          ${money(
-                            i.price
-                          )}
-                          cada
-                        </div>
-
-                        <div
-                          class="qty"
-                        >
-
-                          <button
-                            data-minus="${i.id}"
-                          >
-                            −
-                          </button>
+                        <div style="text-align:right">
 
                           <b>
-                            ${i.qty}
+                            ${money(
+                              i.price * i.qty
+                            )}
                           </b>
 
+                          <br>
+
                           <button
-                            data-plus="${i.id}"
+                            class="remove"
+                            data-remove="${i.id}"
                           >
-                            +
+                            remover
                           </button>
 
                         </div>
 
                       </div>
-
-
-                      <div
-                        style="
-                          text-align:right
-                        "
-                      >
-
-                        <b>
-                          ${money(
-                            i.price *
-                            i.qty
-                          )}
-                        </b>
-
-                        <br>
-
-                        <button
-                          class="remove"
-                          data-remove="${i.id}"
-                        >
-                          remover
-                        </button>
-
-                      </div>
-
+                    `)
+                    .join("")
+                : `
+                    <div class="empty">
+                      Seu pedido está vazio.
+                      <br>
+                      Toque em um produto
+                      para adicionar.
                     </div>
-
-                  `)
-                  .join("")
-
-                :
-
-                `
-
-                  <div
-                    class="empty"
-                  >
-                    Seu pedido
-                    está vazio.
-                    <br>
-                    Toque em um produto
-                    para adicionar.
-                  </div>
-
-                `
+                  `
             }
 
           </div>
 
+          <div class="cart-foot">
 
-          <div
-            class="cart-foot"
-          >
-
-            <div
-              class="total"
-            >
-
+            <div class="total">
+              <span>Total</span>
               <span>
-                Total
+                ${money(cartTotal())}
               </span>
-
-              <span>
-                ${money(
-                  cartTotal()
-                )}
-              </span>
-
             </div>
-
 
             <button
               class="checkout"
               id="checkout"
-              ${
-                state.cart.length
-                  ? ""
-                  : "disabled"
-              }
+              ${state.cart.length ? "" : "disabled"}
             >
               Finalizar venda
             </button>
 
+            <div class="quick">
 
-            <div
-              class="quick"
-            >
-
-              <button
-                id="clearCart"
-              >
+              <button id="clearCart">
                 Limpar
               </button>
 
-              <button
-                id="salesBtn"
-              >
+              <button id="salesBtn">
                 Vendas de hoje
               </button>
 
-              <button
-                id="printTestBtn"
-              >
+              <button id="printTestBtn">
                 🖨️ Testar impressora
               </button>
 
@@ -1057,200 +657,124 @@ function render() {
       </div>
 
     </div>
-
   `;
-
-
-  /* BOTÕES */
 
   document.getElementById(
     "logoutBtn"
   ).onclick = logout;
-
 
   document.getElementById(
     "refreshBtn"
   ).onclick = async () => {
 
     state.products =
-      await apiGet(
-        "/products"
-      );
+      await apiGet("/products");
 
     state.store =
-      await apiGet(
-        "/store/status"
-      );
+      await apiGet("/store/status");
 
     try {
-
       state.sales =
-        await apiGet(
-          "/orders"
-        );
-
+        await apiGet("/orders");
     } catch (_) {}
 
     render();
-
   };
-
 
   document.getElementById(
     "search"
   ).oninput = e => {
-
     state.search =
       e.target.value;
 
     render();
-
   };
 
-
   document
-    .querySelectorAll(
-      "[data-cat]"
-    )
+    .querySelectorAll("[data-cat]")
     .forEach(b => {
-
       b.onclick = () => {
-
         state.category =
           b.dataset.cat;
 
         render();
-
       };
-
     });
 
-
   document
-    .querySelectorAll(
-      "[data-add]"
-    )
+    .querySelectorAll("[data-add]")
     .forEach(b => {
-
       b.onclick = () => {
-
         add(
           state.products.find(
-            p =>
-              p.id ===
-              b.dataset.add
+            p => p.id === b.dataset.add
           )
         );
-
       };
-
     });
 
-
   document
-    .querySelectorAll(
-      "[data-minus]"
-    )
+    .querySelectorAll("[data-minus]")
     .forEach(b => {
-
       b.onclick = () =>
         changeQty(
           b.dataset.minus,
           -1
         );
-
     });
 
-
   document
-    .querySelectorAll(
-      "[data-plus]"
-    )
+    .querySelectorAll("[data-plus]")
     .forEach(b => {
-
       b.onclick = () =>
         changeQty(
           b.dataset.plus,
           1
         );
-
     });
 
-
   document
-    .querySelectorAll(
-      "[data-remove]"
-    )
+    .querySelectorAll("[data-remove]")
     .forEach(b => {
-
       b.onclick = () => {
-
         state.cart =
           state.cart.filter(
-            i =>
-              i.id !==
-              b.dataset.remove
+            i => i.id !== b.dataset.remove
           );
 
         render();
-
       };
-
     });
-
 
   document.getElementById(
     "clearCart"
   ).onclick = () => {
-
     state.cart = [];
-
     render();
-
   };
-
 
   document.getElementById(
     "checkout"
-  ).onclick =
-    openCheckout;
-
-
-  document.getElementById(
+  ).onclick = openCheckout;
+     document.getElementById(
     "salesBtn"
-  ).onclick =
-    openSales;
-
+  ).onclick = openSales;
 
   document.getElementById(
     "printTestBtn"
-  ).onclick =
-    imprimirTesteMobilePrint;
+  ).onclick = imprimirTesteMobilePrint;
 }
 
-
-/* =========================================================
-   MODAL
-========================================================= */
-
 function modal(html) {
-
   const e =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
-  e.className =
-    "modal-back";
+  e.className = "modal-back";
 
   e.innerHTML = `
-
     <div class="modal">
-
       ${html}
-
     </div>
-
   `;
 
   document.body.appendChild(e);
@@ -1258,81 +782,47 @@ function modal(html) {
   return e;
 }
 
-
-/* =========================================================
-   FINALIZAR VENDA
-========================================================= */
-
 function openCheckout() {
 
   const m = modal(`
-
-    <div
-      class="modal-head"
-    >
+    <div class="modal-head">
 
       <div>
-
-        <h2>
-          Finalizar venda
-        </h2>
+        <h2>Finalizar venda</h2>
 
         <p>
-
           Total:
-
           <b>
-            ${money(
-              cartTotal()
-            )}
+            ${money(cartTotal())}
           </b>
-
         </p>
-
       </div>
 
-
-      <button
-        class="close"
-      >
+      <button class="close">
         ×
       </button>
 
     </div>
 
-
-    <div
-      class="form-grid"
-    >
+    <div class="form-grid">
 
       <label>
-
         Cliente (opcional)
-
         <input
           id="client"
           placeholder="Nome do cliente"
         >
-
       </label>
 
-
       <label>
-
         Telefone (opcional)
-
         <input
           id="phone"
           placeholder="(93) 99999-9999"
         >
-
       </label>
 
-
-      <label
-        class="full"
-      >
-
+      <label class="full">
         Observação
 
         <textarea
@@ -1343,32 +833,20 @@ function openCheckout() {
 
       </label>
 
-
-      <div
-        class="full"
-      >
+      <div class="full">
 
         <b>
           Forma de pagamento
         </b>
 
-
-        <div
-          class="payment"
-        >
+        <div class="payment">
 
           ${
-            [
-              "Dinheiro",
-              "Pix",
-              "Cartão"
-            ]
+            ["Dinheiro", "Pix", "Cartão"]
               .map(p => `
-
                 <button
                   class="${
-                    p ===
-                    state.payment
+                    p === state.payment
                       ? "active"
                       : ""
                   }"
@@ -1376,7 +854,6 @@ function openCheckout() {
                 >
                   ${p}
                 </button>
-
               `)
               .join("")
           }
@@ -1385,7 +862,6 @@ function openCheckout() {
 
       </div>
 
-
       <div
         id="cashArea"
         class="full"
@@ -1393,22 +869,17 @@ function openCheckout() {
 
     </div>
 
-
     <button
       class="primary"
       id="confirmSale"
     >
       Confirmar venda
     </button>
-
   `);
-
 
   m.querySelector(
     ".close"
-  ).onclick = () =>
-    m.remove();
-
+  ).onclick = () => m.remove();
 
   m.querySelectorAll(
     "[data-pay]"
@@ -1422,31 +893,19 @@ function openCheckout() {
       m.remove();
 
       openCheckout();
-
     };
 
   });
 
-
   const ca =
-    m.querySelector(
-      "#cashArea"
-    );
+    m.querySelector("#cashArea");
 
-
-  if (
-    state.payment ===
-    "Dinheiro"
-  ) {
+  if (state.payment === "Dinheiro") {
 
     ca.innerHTML = `
-
-      <div
-        class="change"
-      >
+      <div class="change">
 
         <label>
-
           Valor recebido
 
           <input
@@ -1459,25 +918,15 @@ function openCheckout() {
 
         </label>
 
-
-        <div
-          style="
-            margin-top:8px
-          "
-        >
-
+        <div style="margin-top:8px">
           Troco:
-
           <b id="change">
             R$ 0,00
           </b>
-
         </div>
 
       </div>
-
     `;
-
 
     m.querySelector(
       "#received"
@@ -1485,195 +934,119 @@ function openCheckout() {
 
       m.querySelector(
         "#change"
-      ).textContent =
-        money(
-          Math.max(
-            0,
-            Number(
-              e.target.value
-            ) -
-            cartTotal()
-          )
-        );
+      ).textContent = money(
+        Math.max(
+          0,
+          Number(e.target.value) -
+          cartTotal()
+        )
+      );
 
     };
-
   }
-
 
   m.querySelector(
     "#confirmSale"
-  ).onclick =
-    async () => {
+  ).onclick = async () => {
 
-      const received =
-        Number(
-          m.querySelector(
-            "#received"
-          )?.value || 0
-        );
+    const received =
+      Number(
+        m.querySelector(
+          "#received"
+        )?.value || 0
+      );
 
+    if (
+      state.payment === "Dinheiro" &&
+      received < cartTotal()
+    ) {
+      alert(
+        "Informe um valor recebido igual ou maior que o total."
+      );
+      return;
+    }
 
-      if (
-        state.payment ===
-          "Dinheiro" &&
+    const order = {
+      customer_name:
+        m.querySelector(
+          "#client"
+        ).value.trim() ||
+        "Cliente balcão",
 
-        received <
-          cartTotal()
-      ) {
+      phone:
+        m.querySelector(
+          "#phone"
+        ).value.trim() ||
+        "PDV",
 
-        alert(
-          "Informe um valor recebido igual ou maior que o total."
-        );
+      fulfillment: "retirada",
 
-        return;
+      address: null,
 
-      }
+      payment:
+        state.payment,
 
+      items:
+        state.cart.map(i => ({
+          name: i.name,
+          quantity: i.qty,
+          unit_price: i.price
+        })),
 
-      const order = {
+      total: cartTotal(),
 
-        customer_name:
-          m.querySelector(
-            "#client"
-          ).value.trim() ||
-          "Cliente balcão",
-
-        phone:
-          m.querySelector(
-            "#phone"
-          ).value.trim() ||
-          "PDV",
-
-        fulfillment:
-          "retirada",
-
-        address:
-          null,
-
-        payment:
-          state.payment,
-
-        items:
-          state.cart.map(
-            i => ({
-              name:
-                i.name,
-
-              quantity:
-                i.qty,
-
-              unit_price:
-                i.price
-            })
-          ),
-
-        total:
-          cartTotal(),
-
-        notes:
-          m.querySelector(
-            "#notes"
-          ).value.trim() ||
-          null
-
-      };
-
-
-      try {
-
-        /* REGISTRA A VENDA */
-
-        await apiSend(
-          "/orders",
-          "POST",
-          order
-        );
-
-
-        const total =
-          cartTotal();
-
-
-        const troco =
-          state.payment ===
-          "Dinheiro"
-
-            ?
-
-            Math.max(
-              0,
-              received -
-              total
-            )
-
-            :
-
-            0;
-
-
-        /* =================================================
-           IMPRESSÃO AUTOMÁTICA
-        ================================================= */
-
-        imprimirPedidoMobilePrint(
-          order,
-          total,
-          troco
-        );
-
-
-        /* LIMPA O CARRINHO */
-
-        state.cart = [];
-
-
-        state.payment =
-          "Dinheiro";
-
-
-        m.remove();
-
-
-        alert(
-          `Venda registrada com sucesso!
-Total: ${money(total)}${
-            troco
-              ? `\nTroco: ${money(troco)}`
-              : ""
-          }`
-        );
-
-
-        try {
-
-          state.sales =
-            await apiGet(
-              "/orders"
-            );
-
-        } catch (_) {}
-
-
-        render();
-
-
-      } catch (e) {
-
-        alert(
-          e.message
-        );
-
-      }
-
+      notes:
+        m.querySelector(
+          "#notes"
+        ).value.trim() ||
+        null
     };
 
+    try {
+
+      await apiSend(
+        "/orders",
+        "POST",
+        order
+      );
+
+      const total =
+        cartTotal();
+
+      const troco =
+        state.payment === "Dinheiro"
+          ? Math.max(
+              0,
+              received - total
+            )
+          : 0;
+
+      // A venda já foi salva no servidor.
+      // A impressão agora é iniciada por um botão visível,
+      // para que o toque do usuário abra o Mobile Print Util no iPad.
+      state.cart = [];
+
+      state.payment =
+        "Dinheiro";
+
+      m.remove();
+
+      try {
+        state.sales =
+          await apiGet("/orders");
+      } catch (_) {}
+
+      render();
+
+      mostrarSucessoVenda(order, total, troco);
+
+    } catch (e) {
+
+      alert(e.message);
+
+    }
+  };
 }
-
-
-/* =========================================================
-   VENDAS DE HOJE
-========================================================= */
 
 function openSales() {
 
@@ -1682,41 +1055,24 @@ function openSales() {
       .toISOString()
       .slice(0, 10);
 
-
   const sales =
     state.sales.filter(
       o =>
-
-        (
-          o.created_at ||
-          ""
-        )
-          .slice(0, 10) ===
-          today
-
-        &&
-
-        o.status !==
-          "cancelado"
+        (o.created_at || "")
+          .slice(0, 10) === today &&
+        o.status !== "cancelado"
     );
-
 
   const total =
     sales.reduce(
       (s, o) =>
-        s +
-        Number(
-          o.total || 0
-        ),
+        s + Number(o.total || 0),
       0
     );
 
-
   const m = modal(`
 
-    <div
-      class="modal-head"
-    >
+    <div class="modal-head">
 
       <div>
 
@@ -1725,117 +1081,63 @@ function openSales() {
         </h2>
 
         <p>
-
           Total:
-
-          <b>
-            ${money(total)}
-          </b>
-
-          •
-
-          ${sales.length}
-          venda(s)
-
+          <b>${money(total)}</b>
+          • ${sales.length} venda(s)
         </p>
 
       </div>
 
-
-      <button
-        class="close"
-      >
+      <button class="close">
         ×
       </button>
 
     </div>
 
-
-    <div
-      class="sales"
-    >
+    <div class="sales">
 
       ${
         sales.length
+          ? sales
+              .slice(0, 50)
+              .map(o => `
+                <div class="sale-row">
 
-          ?
+                  <span>
+                    #${esc(
+                      (o.order_id || "")
+                        .slice(-6)
+                    )}
+                    •
+                    ${esc(
+                      o.payment || ""
+                    )}
+                  </span>
 
-          sales
-            .slice(0, 50)
-            .map(o => `
+                  <b>
+                    ${money(o.total)}
+                  </b>
 
-              <div
-                class="sale-row"
-              >
-
-                <span>
-
-                  #
-
-                  ${esc(
-                    (
-                      o.order_id ||
-                      ""
-                    ).slice(-6)
-                  )}
-
-                  •
-
-                  ${esc(
-                    o.payment ||
-                    ""
-                  )}
-
-                </span>
-
-
-                <b>
-                  ${money(
-                    o.total
-                  )}
-                </b>
-
-              </div>
-
-            `)
-            .join("")
-
-          :
-
-          `
-
-            <div
-              class="empty"
-            >
-              Nenhuma venda
-              registrada hoje.
+                </div>
+              `)
+              .join("")
+          : `
+            <div class="empty">
+              Nenhuma venda registrada hoje.
             </div>
-
           `
       }
 
     </div>
-
   `);
-
 
   m.querySelector(
     ".close"
-  ).onclick = () =>
-    m.remove();
+  ).onclick = () => m.remove();
 }
 
-
-/* =========================================================
-   INICIAR
-========================================================= */
-
 if (state.token) {
-
   init();
-
 } else {
-
   renderLogin();
-
 }
