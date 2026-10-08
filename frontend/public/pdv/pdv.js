@@ -7,43 +7,8 @@ function criarUrlMobilePrintUtil(conteudo) {
   return `com.samathosoft.webprint://${conteudo}`;
 }
 
-function imprimirTesteMobilePrint() {
-  const ESC = "\x1B";
-  const GS = "\x1D";
-
-  // Comandos ESC/POS
-  const inicializar = ESC + "@";
-  const cortar = GS + "V" + "\x00";
-
-  const texto =
-    inicializar +
-    "PANIFICADORA CARVALHO\n" +
-    "TESTE DE GUILHOTINA\n" +
-    "------------------------------\n" +
-    "Se cortar automaticamente,\n" +
-    "a guilhotina esta funcionando.\n" +
-    "\n\n\n" +
-    cortar;
-
-  const bytes = new TextEncoder().encode(texto);
-
-  let binary = "";
-  bytes.forEach(byte => {
-    binary += String.fromCharCode(byte);
-  });
-
-  const base64 = btoa(binary);
-
-  const url =
-    `com.samathosoft.webprint://#deb64#${base64}`;
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.style.display = "none";
-
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+function abrirMobilePrintUtil(conteudo) {
+  window.location.href = criarUrlMobilePrintUtil(conteudo);
 }
 
 function textoSeguroImpressao(valor) {
@@ -55,68 +20,55 @@ function textoSeguroImpressao(valor) {
 function criarUrlImpressaoPedido(order, total, troco = 0) {
   let texto = "";
 
-  const linha = (conteudo = "") => {
-    texto += conteudo + "#lf#";
-  };
-
   texto += "#escps#";
-
-  linha("PANIFICADORA CARVALHO");
-  linha("PEDIDO / VENDA");
-  linha("--------------------------------");
-
-  linha(
-    "Cliente: " +
-    textoSeguroImpressao(order.customer_name)
-  );
-
-  linha(
-    "Pagamento: " +
-    textoSeguroImpressao(order.payment)
-  );
+  texto += "PANIFICADORA CARVALHO#lf#";
+  texto += "PEDIDO / VENDA#lf#";
+  texto += "--------------------------------#lf#";
+  texto += "Cliente: " + textoSeguroImpressao(order.customer_name) + "#lf#";
+  texto += "Pagamento: " + textoSeguroImpressao(order.payment) + "#lf#";
 
   if (order.notes) {
-    linha(
-      "Obs: " +
-      textoSeguroImpressao(order.notes)
-    );
+    texto += "Obs: " + textoSeguroImpressao(order.notes) + "#lf#";
   }
 
-  linha("");
+  texto += "#lf#";
 
   order.items.forEach(item => {
     const subtotal =
       Number(item.unit_price) *
       Number(item.quantity);
 
-    linha(
-      textoSeguroImpressao(item.name)
-    );
+    texto +=
+      textoSeguroImpressao(item.name) +
+      "#lf#";
 
-    linha(
+    texto +=
       "  " +
       item.quantity +
       " x " +
       money(item.unit_price) +
       " = " +
-      money(subtotal)
-    );
+      money(subtotal) +
+      "#lf#";
   });
 
-  linha("");
-  linha("--------------------------------");
-  linha("TOTAL: " + money(total));
+  texto += "#lf#";
+  texto += "--------------------------------#lf#";
+  texto += "TOTAL: " + money(total) + "#lf#";
 
   if (troco > 0) {
-    linha("TROCO: " + money(troco));
+    texto +=
+      "TROCO: " +
+      money(troco) +
+      "#lf#";
   }
 
-  linha("--------------------------------");
-  linha("");
-  linha("Obrigado pela preferencia!");
-  linha("Volte sempre!");
-  linha("");
-  linha("");
+  texto += "--------------------------------#lf#";
+  texto += "#lf#";
+  texto +=
+    "Obrigado pela preferencia!#lf#";
+  texto +=
+    "Volte sempre!#lf##lf##lf#";
 
   return criarUrlMobilePrintUtil(texto);
 }
@@ -131,7 +83,6 @@ function mostrarSucessoVenda(order, total, troco = 0) {
 
   const m = modal(`
     <div class="modal-head">
-
       <div>
         <h2>✅ Venda registrada!</h2>
 
@@ -146,7 +97,6 @@ function mostrarSucessoVenda(order, total, troco = 0) {
           }
         </p>
       </div>
-
     </div>
 
     <div
@@ -155,11 +105,15 @@ function mostrarSucessoVenda(order, total, troco = 0) {
         text-align:center;
       "
     >
-
-      <p style="margin:0 0 16px;">
+      <p
+        style="
+          margin:0 0 16px;
+        "
+      >
         A venda foi salva.
         Agora toque no botão abaixo
-        para imprimir o pedido.
+        para abrir o Mobile Print Util
+        e imprimir o pedido.
       </p>
 
       <a
@@ -184,7 +138,6 @@ function mostrarSucessoVenda(order, total, troco = 0) {
       >
         Fechar
       </button>
-
     </div>
   `);
 
@@ -229,14 +182,13 @@ const money = n =>
 const esc = s =>
   String(s ?? "").replace(
     /[&<>"']/g,
-    m =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
-      }[m])
+    m => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[m])
   );
 
 const headers = () =>
@@ -266,14 +218,10 @@ function renderLogin(error = "") {
     "app"
   ).innerHTML = `
     <div class="login-wrap">
-
       <div class="login-card">
 
         <div class="logo-title">
-
-          <div class="mark">
-            🥖
-          </div>
+          <div class="mark">🥖</div>
 
           <div>
             <h2>PDV</h2>
@@ -281,12 +229,9 @@ function renderLogin(error = "") {
               Panificadora Carvalho
             </p>
           </div>
-
         </div>
 
-        <label>
-          E-mail
-        </label>
+        <label>E-mail</label>
 
         <input
           id="loginEmail"
@@ -294,9 +239,7 @@ function renderLogin(error = "") {
           placeholder="E-mail do administrador"
         >
 
-        <label>
-          Senha
-        </label>
+        <label>Senha</label>
 
         <input
           id="loginPassword"
@@ -306,11 +249,9 @@ function renderLogin(error = "") {
 
         ${
           error
-            ? `
-              <div class="error">
+            ? `<div class="error">
                 ${esc(error)}
-              </div>
-            `
+              </div>`
             : ""
         }
 
@@ -322,7 +263,6 @@ function renderLogin(error = "") {
         </button>
 
       </div>
-
     </div>
   `;
 
@@ -333,54 +273,40 @@ function renderLogin(error = "") {
   document.getElementById(
     "loginPassword"
   ).onkeydown = e => {
-
     if (e.key === "Enter") {
       login();
     }
-
   };
 }
 
 async function login() {
-
   const email =
-    document
-      .getElementById(
-        "loginEmail"
-      )
-      .value
-      .trim();
+    document.getElementById(
+      "loginEmail"
+    ).value.trim();
 
   const password =
-    document
-      .getElementById(
-        "loginPassword"
-      )
-      .value;
+    document.getElementById(
+      "loginPassword"
+    ).value;
 
   try {
+    const r = await fetch(
+      `${API}/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
+      }
+    );
 
-    const r =
-      await fetch(
-        `${API}/auth/login`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              email,
-              password
-            })
-        }
-      );
-
-    const d =
-      await r.json();
+    const d = await r.json();
 
     if (!r.ok) {
       throw new Error(
@@ -389,8 +315,7 @@ async function login() {
       );
     }
 
-    state.token =
-      d.token;
+    state.token = d.token;
 
     localStorage.setItem(
       TOKEN_KEY,
@@ -400,27 +325,21 @@ async function login() {
     await init();
 
   } catch (e) {
-
     renderLogin(
       e.message
     );
-
   }
 }
 
 async function apiGet(path) {
-
-  const r =
-    await fetch(
-      `${API}${path}`,
-      {
-        headers:
-          headers()
-      }
-    );
+  const r = await fetch(
+    `${API}${path}`,
+    {
+      headers: headers()
+    }
+  );
 
   if (r.status === 401) {
-
     logout();
 
     throw new Error(
@@ -432,7 +351,6 @@ async function apiGet(path) {
     await r.json();
 
   if (!r.ok) {
-
     throw new Error(
       d.detail ||
       "Erro na API"
@@ -447,27 +365,21 @@ async function apiSend(
   method,
   body
 ) {
-
-  const r =
-    await fetch(
-      `${API}${path}`,
-      {
-        method,
-
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          ...headers()
-        },
-
-        body:
-          JSON.stringify(body)
-      }
-    );
+  const r = await fetch(
+    `${API}${path}`,
+    {
+      method,
+      headers: {
+        "Content-Type":
+          "application/json",
+        ...headers()
+      },
+      body:
+        JSON.stringify(body)
+    }
+  );
 
   if (r.status === 401) {
-
     logout();
 
     throw new Error(
@@ -479,7 +391,6 @@ async function apiSend(
     await r.json();
 
   if (!r.ok) {
-
     throw new Error(
       d.detail ||
       "Erro na API"
@@ -490,9 +401,7 @@ async function apiSend(
 }
 
 async function init() {
-
   try {
-
     await apiGet(
       "/auth/me"
     );
@@ -500,45 +409,32 @@ async function init() {
     [
       state.products,
       state.store
-    ] =
-      await Promise.all([
-        apiGet(
-          "/products"
-        ),
-
-        apiGet(
-          "/store/status"
-        )
-      ]);
+    ] = await Promise.all([
+      apiGet("/products"),
+      apiGet("/store/status")
+    ]);
 
     try {
-
       state.sales =
         await apiGet(
           "/orders"
         );
-
     } catch (_) {
-
       state.sales = [];
-
     }
 
     render();
 
   } catch (e) {
-
     renderLogin(
       state.token
         ? e.message
         : ""
     );
-
   }
 }
 
 function logout() {
-
   state.token = "";
 
   localStorage.removeItem(
@@ -549,10 +445,8 @@ function logout() {
 }
 
 function categories() {
-
   return [
     "Todos",
-
     ...new Set(
       state.products.map(
         p => p.category
@@ -562,7 +456,6 @@ function categories() {
 }
 
 function filtered() {
-
   const q =
     state.search
       .toLowerCase()
@@ -576,38 +469,30 @@ function filtered() {
         p.category ===
           state.category
       ) &&
-
       (
         !q ||
-
         p.name
           .toLowerCase()
           .includes(q) ||
-
         String(
           p.description || ""
         )
           .toLowerCase()
           .includes(q)
       ) &&
-
       p.available
   );
 }
 
 function add(p) {
-
   const x =
     state.cart.find(
       i => i.id === p.id
     );
 
   if (x) {
-
     x.qty++;
-
   } else {
-
     state.cart.push({
       id: p.id,
       name: p.name,
@@ -615,17 +500,12 @@ function add(p) {
         Number(p.price),
       qty: 1
     });
-
   }
 
   render();
 }
 
-function changeQty(
-  id,
-  d
-) {
-
+function changeQty(id, d) {
   const x =
     state.cart.find(
       i => i.id === id
@@ -636,23 +516,16 @@ function changeQty(
   x.qty += d;
 
   if (x.qty <= 0) {
-
     state.cart =
       state.cart.filter(
         i => i.id !== id
       );
-
   }
 
   render();
 }
-
 function render() {
-
-  document.getElementById(
-    "app"
-  ).innerHTML = `
-
+  document.getElementById("app").innerHTML = `
     <div class="pdv">
 
       <header class="topbar">
@@ -666,7 +539,6 @@ function render() {
           >
 
           <div class="brand-info">
-
             <strong>
               Panificadora Carvalho
             </strong>
@@ -678,7 +550,6 @@ function render() {
             <small>
               Qualidade e sabor todos os dias!
             </small>
-
           </div>
 
         </div>
@@ -686,33 +557,24 @@ function render() {
         <div class="top-actions">
 
           <span
-            class="
-              status
-              ${
-                state.store?.is_open
-                  ? "open"
-                  : "closed"
-              }
-            "
+            class="status ${
+              state.store?.is_open
+                ? "open"
+                : "closed"
+            }"
           >
-
             ${
               state.store?.is_open
                 ? "● Loja aberta"
                 : "● Loja fechada"
             }
-
           </span>
 
-          <button
-            id="refreshBtn"
-          >
+          <button id="refreshBtn">
             Atualizar
           </button>
 
-          <button
-            id="logoutBtn"
-          >
+          <button id="logoutBtn">
             Sair
           </button>
 
@@ -730,9 +592,7 @@ function render() {
               class="search"
               id="search"
               placeholder="🔎 Buscar produto..."
-              value="${esc(
-                state.search
-              )}"
+              value="${esc(state.search)}"
             >
 
           </div>
@@ -742,22 +602,16 @@ function render() {
             ${categories()
               .map(
                 c => `
-
                   <button
-                    class="
-                      cat
-                      ${
-                        c ===
-                        state.category
-                          ? "active"
-                          : ""
-                      }
-                    "
+                    class="cat ${
+                      c === state.category
+                        ? "active"
+                        : ""
+                    }"
                     data-cat="${esc(c)}"
                   >
                     ${esc(c)}
                   </button>
-
                 `
               )
               .join("")}
@@ -770,43 +624,29 @@ function render() {
               filtered()
                 .map(
                   p => `
-
-                    <article
-                      class="product"
-                    >
+                    <article class="product">
 
                       <img
                         class="product-image"
                         src="${productImage(
                           p.image_url
                         )}"
-                        alt="${esc(
-                          p.name
-                        )}"
-                        onerror="
-                          this.src='${LOGO_URL}'
-                        "
+                        alt="${esc(p.name)}"
+                        onerror="this.src='${LOGO_URL}'"
                       >
 
                       <h3>
-                        ${esc(
-                          p.name
-                        )}
+                        ${esc(p.name)}
                       </h3>
 
                       <p>
                         ${esc(
-                          p.description ||
-                          ""
+                          p.description || ""
                         )}
                       </p>
 
-                      <div
-                        class="price"
-                      >
-                        ${money(
-                          p.price
-                        )}
+                      <div class="price">
+                        ${money(p.price)}
                       </div>
 
                       <button
@@ -816,7 +656,6 @@ function render() {
                       </button>
 
                     </article>
-
                   `
                 )
                 .join("")
@@ -834,62 +673,40 @@ function render() {
 
         </main>
 
-        <aside
-          class="cart-panel"
-        >
+        <aside class="cart-panel">
 
-          <div
-            class="cart-head"
-          >
+          <div class="cart-head">
 
             <h2>
               Pedido atual
             </h2>
 
             <strong>
-              ${cartCount()}
-              item(ns)
+              ${cartCount()} item(ns)
             </strong>
 
           </div>
 
-          <div
-            class="cart-items"
-          >
+          <div class="cart-items">
 
             ${
               state.cart.length
-
                 ? state.cart
                     .map(
                       i => `
-
-                        <div
-                          class="cart-item"
-                        >
+                        <div class="cart-item">
 
                           <div>
 
-                            <div
-                              class="cart-name"
-                            >
-                              ${esc(
-                                i.name
-                              )}
+                            <div class="cart-name">
+                              ${esc(i.name)}
                             </div>
 
-                            <div
-                              class="cart-sub"
-                            >
-                              ${money(
-                                i.price
-                              )}
-                              cada
+                            <div class="cart-sub">
+                              ${money(i.price)} cada
                             </div>
 
-                            <div
-                              class="qty"
-                            >
+                            <div class="qty">
 
                               <button
                                 data-minus="${i.id}"
@@ -912,9 +729,7 @@ function render() {
                           </div>
 
                           <div
-                            style="
-                              text-align:right
-                            "
+                            style="text-align:right"
                           >
 
                             <b>
@@ -936,43 +751,32 @@ function render() {
                           </div>
 
                         </div>
-
                       `
                     )
                     .join("")
 
                 : `
-
-                    <div
-                      class="empty"
-                    >
+                    <div class="empty">
                       Seu pedido está vazio.
                       <br>
                       Toque em um produto
                       para adicionar.
                     </div>
-
                   `
             }
 
           </div>
 
-          <div
-            class="cart-foot"
-          >
+          <div class="cart-foot">
 
-            <div
-              class="total"
-            >
+            <div class="total">
 
               <span>
                 Total
               </span>
 
               <span>
-                ${money(
-                  cartTotal()
-                )}
+                ${money(cartTotal())}
               </span>
 
             </div>
@@ -989,26 +793,14 @@ function render() {
               Finalizar venda
             </button>
 
-            <div
-              class="quick"
-            >
+            <div class="quick">
 
-              <button
-                id="clearCart"
-              >
+              <button id="clearCart">
                 Limpar
               </button>
 
-              <button
-                id="salesBtn"
-              >
+              <button id="salesBtn">
                 Vendas de hoje
-              </button>
-
-              <button
-                id="printTestBtn"
-              >
-                🖨️ Testar impressora
               </button>
 
             </div>
@@ -1041,12 +833,10 @@ function render() {
       );
 
     try {
-
       state.sales =
         await apiGet(
           "/orders"
         );
-
     } catch (_) {}
 
     render();
@@ -1074,7 +864,6 @@ function render() {
           b.dataset.cat;
 
         render();
-
       };
 
     });
@@ -1143,7 +932,6 @@ function render() {
           );
 
         render();
-
       };
 
     });
@@ -1166,11 +954,6 @@ function render() {
     "salesBtn"
   ).onclick =
     openSales;
-
-  document.getElementById(
-    "printTestBtn"
-  ).onclick =
-    imprimirTesteMobilePrint;
 }
 
 function modal(html) {
@@ -1198,9 +981,7 @@ function openCheckout() {
 
   const m = modal(`
 
-    <div
-      class="modal-head"
-    >
+    <div class="modal-head">
 
       <div>
 
@@ -1211,25 +992,19 @@ function openCheckout() {
         <p>
           Total:
           <b>
-            ${money(
-              cartTotal()
-            )}
+            ${money(cartTotal())}
           </b>
         </p>
 
       </div>
 
-      <button
-        class="close"
-      >
+      <button class="close">
         ×
       </button>
 
     </div>
 
-    <div
-      class="form-grid"
-    >
+    <div class="form-grid">
 
       <label>
 
@@ -1253,9 +1028,7 @@ function openCheckout() {
 
       </label>
 
-      <label
-        class="full"
-      >
+      <label class="full">
 
         Observação
 
@@ -1267,17 +1040,13 @@ function openCheckout() {
 
       </label>
 
-      <div
-        class="full"
-      >
+      <div class="full">
 
         <b>
           Forma de pagamento
         </b>
 
-        <div
-          class="payment"
-        >
+        <div class="payment">
 
           ${
             [
@@ -1287,11 +1056,9 @@ function openCheckout() {
             ]
               .map(
                 p => `
-
                   <button
                     class="${
-                      p ===
-                      state.payment
+                      p === state.payment
                         ? "active"
                         : ""
                     }"
@@ -1299,7 +1066,6 @@ function openCheckout() {
                   >
                     ${p}
                   </button>
-
                 `
               )
               .join("")
@@ -1358,9 +1124,7 @@ function openCheckout() {
 
     ca.innerHTML = `
 
-      <div
-        class="change"
-      >
+      <div class="change">
 
         <label>
 
@@ -1379,7 +1143,6 @@ function openCheckout() {
         <div
           style="margin-top:8px"
         >
-
           Troco:
 
           <b id="change">
@@ -1539,6 +1302,7 @@ function openCheckout() {
         );
 
       }
+
     };
 }
 
@@ -1555,10 +1319,8 @@ function openSales() {
         (
           o.created_at ||
           ""
-        )
-          .slice(0, 10) ===
+        ).slice(0, 10) ===
           today &&
-
         o.status !==
           "cancelado"
     );
@@ -1575,9 +1337,7 @@ function openSales() {
 
   const m = modal(`
 
-    <div
-      class="modal-head"
-    >
+    <div class="modal-head">
 
       <div>
 
@@ -1586,7 +1346,6 @@ function openSales() {
         </h2>
 
         <p>
-
           Total:
           <b>
             ${money(total)}
@@ -1595,22 +1354,17 @@ function openSales() {
           •
           ${sales.length}
           venda(s)
-
         </p>
 
       </div>
 
-      <button
-        class="close"
-      >
+      <button class="close">
         ×
       </button>
 
     </div>
 
-    <div
-      class="sales"
-    >
+    <div class="sales">
 
       ${
         sales.length
@@ -1619,7 +1373,6 @@ function openSales() {
               .slice(0, 50)
               .map(
                 o => `
-
                   <div
                     class="sale-row"
                   >
@@ -1650,19 +1403,15 @@ function openSales() {
                     </b>
 
                   </div>
-
                 `
               )
               .join("")
 
           : `
-
-              <div
-                class="empty"
-              >
-                Nenhuma venda registrada hoje.
+              <div class="empty">
+                Nenhuma venda
+                registrada hoje.
               </div>
-
             `
       }
 
@@ -1675,13 +1424,8 @@ function openSales() {
   ).onclick = () =>
     m.remove();
 }
-
 if (state.token) {
-
   init();
-
 } else {
-
   renderLogin();
-
 }
