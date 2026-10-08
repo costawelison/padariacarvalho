@@ -113,7 +113,7 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
   texto += linha("Obrigado pela preferencia!");
   texto += linha("Volte sempre!");
 
-  texto += "#lf##lf##lf#";
+  texto += "#lf##lf##lf##lf##lf#";
 
   return criarUrlMobilePrintUtil(texto);
 }
