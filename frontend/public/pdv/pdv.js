@@ -7,31 +7,43 @@ function criarUrlMobilePrintUtil(conteudo) {
   return `com.samathosoft.webprint://${conteudo}`;
 }
 
-function abrirMobilePrintUtil(conteudo) {
-  window.location.href = criarUrlMobilePrintUtil(conteudo);
-}
-
 function imprimirTesteMobilePrint() {
-  let texto = "";
+  const ESC = "\x1B";
+  const GS = "\x1D";
 
-  const linha = (conteudo = "") => {
-    texto += conteudo + "#lf#";
-  };
+  // Comandos ESC/POS
+  const inicializar = ESC + "@";
+  const cortar = GS + "V" + "\x00";
 
-  texto += "#escps#";
+  const texto =
+    inicializar +
+    "PANIFICADORA CARVALHO\n" +
+    "TESTE DE GUILHOTINA\n" +
+    "------------------------------\n" +
+    "Se cortar automaticamente,\n" +
+    "a guilhotina esta funcionando.\n" +
+    "\n\n\n" +
+    cortar;
 
-  linha("PANIFICADORA CARVALHO");
-  linha("TESTE DE IMPRESSAO");
-  linha("--------------------------------");
-  linha("Impressora: Bluetooth");
-  linha("Papel: 80mm");
-  linha("ESC/POS: OK");
-  linha("--------------------------------");
-  linha("IMPRESSAO FUNCIONANDO!");
-  linha("");
-  linha("");
+  const bytes = new TextEncoder().encode(texto);
 
-  abrirMobilePrintUtil(texto);
+  let binary = "";
+  bytes.forEach(byte => {
+    binary += String.fromCharCode(byte);
+  });
+
+  const base64 = btoa(binary);
+
+  const url =
+    `com.samathosoft.webprint://#deb64#${base64}`;
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.style.display = "none";
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 function textoSeguroImpressao(valor) {
