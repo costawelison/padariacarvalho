@@ -18,83 +18,102 @@ function textoSeguroImpressao(valor) {
 }
 
 function criarUrlImpressaoPedido(order, total, troco = 0) {
+
+  const LARGURA = 48;
+
+  function centralizar(texto) {
+    texto = String(texto || "");
+
+    if (texto.length >= LARGURA) {
+      return texto;
+    }
+
+    const espacos = Math.floor((LARGURA - texto.length) / 2);
+
+    return " ".repeat(espacos) + texto;
+  }
+
+  function linha(texto) {
+    return centralizar(texto) + "#lf#";
+  }
+
   let texto = "";
 
   texto += "#escps#";
 
-  texto += "#sl#PANIFICADORA CARVALHO#lf#";
-  texto += "#sl#PEDIDO / VENDA#lf#";
+  // CABEÇALHO
+  texto += linha("PANIFICADORA CARVALHO");
+  texto += linha("PEDIDO / VENDA");
 
-  texto += "--------------------------------#lf#";
+  texto += linha("--------------------------------");
 
-  texto +=
-    "#sl#Cliente: " +
-    textoSeguroImpressao(order.customer_name) +
-    "#lf#";
+  // CLIENTE
+  texto += linha(
+    "Cliente: " +
+    textoSeguroImpressao(order.customer_name)
+  );
 
-  texto +=
-    "#sl#Pagamento: " +
-    textoSeguroImpressao(order.payment) +
-    "#lf#";
+  // PAGAMENTO
+  texto += linha(
+    "Pagamento: " +
+    textoSeguroImpressao(order.payment)
+  );
 
+  // OBSERVAÇÃO
   if (order.notes) {
-    texto +=
-      "#sl#Obs: " +
-      textoSeguroImpressao(order.notes) +
-      "#lf#";
+    texto += linha(
+      "Obs: " +
+      textoSeguroImpressao(order.notes)
+    );
   }
 
   texto += "#lf#";
 
+  // PRODUTOS
   order.items.forEach(item => {
+
     const subtotal =
       Number(item.unit_price) *
       Number(item.quantity);
 
-    texto +=
-      "#sl#" +
-      textoSeguroImpressao(item.name) +
-      "#lf#";
+    texto += linha(
+      textoSeguroImpressao(item.name)
+    );
 
-    texto +=
-      "#sl#  " +
+    texto += linha(
       item.quantity +
       " x " +
       money(item.unit_price) +
       " = " +
-      money(subtotal) +
-      "#lf#";
+      money(subtotal)
+    );
   });
 
   texto += "#lf#";
 
-  texto +=
-    "--------------------------------#lf#";
+  // TOTAL
+  texto += linha("--------------------------------");
 
-  texto +=
-    "#sl#TOTAL: " +
-    money(total) +
-    "#lf#";
+  texto += linha(
+    "TOTAL: " + money(total)
+  );
 
+  // TROCO
   if (troco > 0) {
-    texto +=
-      "#sl#TROCO: " +
-      money(troco) +
-      "#lf#";
+    texto += linha(
+      "TROCO: " + money(troco)
+    );
   }
 
-  texto +=
-    "--------------------------------#lf#";
+  texto += linha("--------------------------------");
 
   texto += "#lf#";
 
-  texto +=
-    "#sl#Obrigado pela preferencia!#lf#";
+  // RODAPÉ
+  texto += linha("Obrigado pela preferencia!");
+  texto += linha("Volte sempre!");
 
-  texto +=
-    "#sl#Volte sempre!#lf#";
-
-  texto += "#lf##lf#";
+  texto += "#lf##lf##lf#";
 
   return criarUrlMobilePrintUtil(texto);
 }
