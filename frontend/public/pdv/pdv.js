@@ -21,14 +21,27 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
   let texto = "";
 
   texto += "#escps#";
-  texto += "PANIFICADORA CARVALHO#lf#";
-  texto += "PEDIDO / VENDA#lf#";
+
+  texto += "#sl#PANIFICADORA CARVALHO#lf#";
+  texto += "#sl#PEDIDO / VENDA#lf#";
+
   texto += "--------------------------------#lf#";
-  texto += "Cliente: " + textoSeguroImpressao(order.customer_name) + "#lf#";
-  texto += "Pagamento: " + textoSeguroImpressao(order.payment) + "#lf#";
+
+  texto +=
+    "#sl#Cliente: " +
+    textoSeguroImpressao(order.customer_name) +
+    "#lf#";
+
+  texto +=
+    "#sl#Pagamento: " +
+    textoSeguroImpressao(order.payment) +
+    "#lf#";
 
   if (order.notes) {
-    texto += "Obs: " + textoSeguroImpressao(order.notes) + "#lf#";
+    texto +=
+      "#sl#Obs: " +
+      textoSeguroImpressao(order.notes) +
+      "#lf#";
   }
 
   texto += "#lf#";
@@ -39,11 +52,12 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
       Number(item.quantity);
 
     texto +=
+      "#sl#" +
       textoSeguroImpressao(item.name) +
       "#lf#";
 
     texto +=
-      "  " +
+      "#sl#  " +
       item.quantity +
       " x " +
       money(item.unit_price) +
@@ -53,26 +67,37 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
   });
 
   texto += "#lf#";
-  texto += "--------------------------------#lf#";
-  texto += "TOTAL: " + money(total) + "#lf#";
+
+  texto +=
+    "--------------------------------#lf#";
+
+  texto +=
+    "#sl#TOTAL: " +
+    money(total) +
+    "#lf#";
 
   if (troco > 0) {
     texto +=
-      "TROCO: " +
+      "#sl#TROCO: " +
       money(troco) +
       "#lf#";
   }
 
-  texto += "--------------------------------#lf#";
+  texto +=
+    "--------------------------------#lf#";
+
   texto += "#lf#";
+
   texto +=
-    "Obrigado pela preferencia!#lf#";
+    "#sl#Obrigado pela preferencia!#lf#";
+
   texto +=
-    "Volte sempre!#lf##lf##lf#";
+    "#sl#Volte sempre!#lf#";
+
+  texto += "#lf##lf#";
 
   return criarUrlMobilePrintUtil(texto);
 }
-
 function mostrarSucessoVenda(order, total, troco = 0) {
   const printUrl =
     criarUrlImpressaoPedido(
