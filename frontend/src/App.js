@@ -169,10 +169,22 @@ function App() {
       <div className="flow-head"><span className="eyebrow">ÚLTIMO PASSO</span><h1>Como podemos preparar?</h1><p>Preencha seus dados. Ao tocar em enviar, o WhatsApp abrirá com seu pedido pronto.</p></div>
       <form className="checkout" onSubmit={e => { e.preventDefault(); sendWhatsApp(); }}>
         <div className="choice-group"><label>Você prefere</label>
-          <div className="choices">
-            <button type="button" data-testid="fulfillment-pickup" className={form.fulfillment === "retirada" ? "selected" : ""} onClick={() => setForm({ ...form, fulfillment: "retirada" })}><Store size={22} /><b>Retirar na padaria</b><small>Você busca seu pedido</small></button>
-          </div>
-        </div>
+         ```jsx
+<div className="choices">
+  <button
+    type="button"
+    data-testid="fulfillment-pickup"
+    className="selected"
+    onClick={() =>
+      setForm({ ...form, fulfillment: "retirada", address: "" })
+    }
+  >
+    <Store size={22} />
+    <b>Retirar na panificadora</b>
+    <small>Você busca seu pedido</small>
+  </button>
+</div>
+```
         <div className="form-grid">
           <label>Seu nome<input required name="name" data-testid="customer-name-input" value={form.name} onChange={update} placeholder="Como podemos chamar você?" /></label>
           <label>Seu telefone<input required name="phone" data-testid="customer-phone-input" value={form.phone} onChange={update} placeholder="(93) 99999-9999" /></label>
