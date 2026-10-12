@@ -15,8 +15,7 @@ import {
   Clock,
 } from "lucide-react";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
+const API = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "") + "/api";
 const logo =
   "https://customer-assets-v7afamib.emergentagent.net/job_padaria-pedidos/artifacts/mi6urdta_WhatsApp%20Image%202026-09-18%20at%2008.12.49.jpeg";
 
