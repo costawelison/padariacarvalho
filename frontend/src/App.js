@@ -1,4 +1,3 @@
-```jsx
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "@/App.css";
@@ -15,7 +14,13 @@ import {
   Clock,
 } from "lucide-react";
 
-const API = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "") + "/api";
+const BACKEND_URL = (
+  process.env.REACT_APP_BACKEND_URL ||
+  "https://padaria-carvalho-api.onrender.com"
+).replace(/\/+$/, "");
+
+const API = `${BACKEND_URL}/api`;
+
 const logo =
   "https://customer-assets-v7afamib.emergentagent.net/job_padaria-pedidos/artifacts/mi6urdta_WhatsApp%20Image%202026-09-18%20at%2008.12.49.jpeg";
 
@@ -41,32 +46,27 @@ const DAY_LABELS = [
 const initialForm = {
   name: "",
   phone: "",
-  fulfillment: "retirada",
   payment: "Dinheiro",
   notes: "",
 };
 
-const money = (n) =>
-  Number(n || 0).toLocaleString("pt-BR", {
+const money = (value) =>
+  Number(value || 0).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
 
-const slug = (s) =>
-  String(s || "")
+const slug = (value) =>
+  String(value || "")
     .toLowerCase()
     .replaceAll(" ", "-")
     .replaceAll("/", "-");
 
 const resolveImageUrl = (url) => {
-  if (!url) {
-    return "";
-  }
-
-  const backendUrl = process.env.REACT_APP_BACKEND_URL || "";
+  if (!url) return "";
 
   if (url.startsWith("/api/")) {
-    return backendUrl.replace(/\/$/, "") + url;
+    return `${BACKEND_URL}${url}`;
   }
 
   return url;
@@ -112,6 +112,7 @@ function ProductCard({ p, onAdd, storeOpen }) {
           <strong>{money(p.price)}</strong>
 
           <button
+            type="button"
             className="add"
             data-testid={`add-${slug(p.name)}`}
             disabled={disabled}
@@ -133,6 +134,7 @@ function ClosedBanner({ status }) {
 
   const day = Number(status.day);
   const schedule = status.schedule || {};
+  const dayName = DAY_LABELS[day] || "hoje";
 
   return (
     <div
@@ -146,8 +148,8 @@ function ClosedBanner({ status }) {
 
         <small>
           {schedule.enabled
-            ? `Hoje (${DAY_LABELS[day]}) atendemos das ${schedule.open} às ${schedule.close}.`
-            : `Hoje (${DAY_LABELS[day]}) estamos fechados.`}{" "}
+            ? `Hoje (${dayName}) atendemos das ${schedule.open} às ${schedule.close}.`
+            : `Hoje (${dayName}) estamos fechados.`}{" "}
           Os pedidos poderão ser feitos quando reabrirmos.
         </small>
       </div>
@@ -167,22 +169,40 @@ function App() {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
+    let active = true;
+
     axios
       .get(`${API}/products`)
       .then((response) => {
-        setProducts(response.data);
+        if (active) {
+          setProducts(
+            Array.isArray(response.data) ? response.data : []
+          );
+        }
       })
       .catch(() => {
-        window.alert(
-          "Não foi possível carregar o cardápio. Verifique sua conexão e atualize a página."
-        );
+        if (active) {
+          window.alert(
+            "Não foi possível carregar o cardápio. Verifique sua conexão e atualize a página."
+          );
+        }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
     axios
       .get(`${API}/store/status`)
-      .then((response) => setStoreStatus(response.data))
-      .catch(() => {});
+      .then((response) => {
+        if (active) setStoreStatus(response.data);
+      })
+      .catch(() => {
+        if (active) setStoreStatus(null);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const storeOpen = storeStatus?.is_open !== false;
@@ -191,19 +211,29 @@ function App() {
     const matchesCategory =
       category === "Todos" || p.category === category;
 
-    const text = `${p.name} ${p.description || ""}`.toLowerCase();
+    const text =
+      `${p.name || ""} ${p.description || ""}`.toLowerCase();
 
-    return matchesCategory && text.includes(query.toLowerCase());
+    return (
+      matchesCategory &&
+      text.includes(query.toLowerCase())
+    );
   });
 
   const total = useMemo(
-    () => cart.reduce((sum, item) => sum + item.price * item.qty, 0),
+    () =>
+      cart.reduce(
+        (sum, item) => sum + item.price * item.qty,
+        0
+      ),
     [cart]
   );
 
   const add = (product) => {
     setCart((current) => {
-      const found = current.find((item) => item.id === product.id);
+      const found = current.find(
+        (item) => item.id === product.id
+      );
 
       if (found) {
         return current.map((item) =>
@@ -251,7 +281,7 @@ function App() {
 
     if (!storeOpen) {
       window.alert(
-        "A padaria está fechada no momento. Faça seu pedido durante o horário de funcionamento."
+        "A padaria está fechada no momento. Tente novamente durante o horário de funcionamento."
       );
       return;
     }
@@ -265,7 +295,9 @@ function App() {
     const customerPhone = form.phone.trim();
 
     if (!customerName || !customerPhone) {
-      window.alert("Informe seu nome e telefone para continuar.");
+      window.alert(
+        "Informe seu nome e telefone para continuar."
+      );
       return;
     }
 
@@ -287,7 +319,9 @@ function App() {
     const lines = cart
       .map(
         (item) =>
-          `• ${item.qty}x ${item.name} — ${money(item.price * item.qty)}`
+          `• ${item.qty}x ${item.name} — ${money(
+            item.price * item.qty
+          )}`
       )
       .join("\n");
 
@@ -300,7 +334,7 @@ function App() {
       "",
       `Cliente: ${customerName}`,
       `Telefone: ${customerPhone}`,
-      "Forma: Retirada na panificadora",
+      "Forma: Retirada na Panificadora Carvalho",
       `Pagamento: ${form.payment}`,
       `Observações: ${form.notes.trim() || "Nenhuma"}`,
     ].join("\n");
@@ -356,7 +390,10 @@ function App() {
 
             {cart.length > 0 && (
               <i data-testid="cart-count">
-                {cart.reduce((sum, item) => sum + item.qty, 0)}
+                {cart.reduce(
+                  (sum, item) => sum + item.qty,
+                  0
+                )}
               </i>
             )}
           </button>
@@ -374,12 +411,13 @@ function App() {
               </span>
 
               <h1>
-                Seu café da manhã começa <em>bem aqui.</em>
+                Seu café da manhã começa{" "}
+                <em>bem aqui.</em>
               </h1>
 
               <p>
-                Escolha seus favoritos, monte o pedido e envie tudo pelo
-                WhatsApp. É fácil, rápido e gostoso.
+                Escolha seus favoritos, monte o pedido e envie
+                tudo pelo WhatsApp. É fácil, rápido e gostoso.
               </p>
 
               <button
@@ -397,7 +435,10 @@ function App() {
 
             <div className="hero-image">
               <img
-                src={resolveImageUrl(products[0]?.image_url) || logo}
+                src={
+                  resolveImageUrl(products[0]?.image_url) ||
+                  logo
+                }
                 alt="Produtos da Panificadora Carvalho"
               />
 
@@ -406,7 +447,9 @@ function App() {
 
                 <div>
                   <b>Fresquinho de verdade</b>
-                  <small>Produção artesanal todos os dias</small>
+                  <small>
+                    Produção artesanal todos os dias
+                  </small>
                 </div>
               </div>
             </div>
@@ -425,18 +468,25 @@ function App() {
                 <input
                   data-testid="product-search-input"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) =>
+                    setQuery(event.target.value)
+                  }
                   placeholder="Buscar produto..."
                 />
               </label>
             </div>
 
-            <nav className="categories" aria-label="Categorias">
+            <nav
+              className="categories"
+              aria-label="Categorias"
+            >
               {categories.map((item) => (
                 <button
                   key={item}
                   data-testid={`category-${item.toLowerCase()}`}
-                  className={category === item ? "active" : ""}
+                  className={
+                    category === item ? "active" : ""
+                  }
                   onClick={() => setCategory(item)}
                 >
                   {item}
@@ -447,7 +497,10 @@ function App() {
             {loading ? (
               <p
                 data-testid="loading-products"
-                style={{ color: "var(--muted)", padding: "40px 0" }}
+                style={{
+                  color: "var(--muted)",
+                  padding: "40px 0",
+                }}
               >
                 Carregando cardápio...
               </p>
@@ -487,7 +540,10 @@ function App() {
           </div>
 
           {cart.length === 0 ? (
-            <div className="empty" data-testid="empty-cart-message">
+            <div
+              className="empty"
+              data-testid="empty-cart-message"
+            >
               <ShoppingBag size={42} />
               <h2>Seu pedido está vazio</h2>
 
@@ -535,7 +591,9 @@ function App() {
 
                     <button
                       className="remove"
-                      onClick={() => change(item.id, -item.qty)}
+                      onClick={() =>
+                        change(item.id, -item.qty)
+                      }
                       data-testid={`remove-${slug(item.name)}`}
                     >
                       <Trash2 size={16} />
@@ -545,7 +603,9 @@ function App() {
 
                 <div className="total">
                   <span>Total dos produtos</span>
-                  <strong data-testid="cart-total">{money(total)}</strong>
+                  <strong data-testid="cart-total">
+                    {money(total)}
+                  </strong>
                 </div>
 
                 <button
@@ -554,7 +614,9 @@ function App() {
                   onClick={() => setStep("checkout")}
                   disabled={!storeOpen}
                 >
-                  {storeOpen ? "Continuar" : "Padaria fechada"}
+                  {storeOpen
+                    ? "Continuar"
+                    : "Padaria fechada"}
                   <ArrowRight size={18} />
                 </button>
               </div>
@@ -577,8 +639,8 @@ function App() {
             <span className="eyebrow">ÚLTIMO PASSO</span>
             <h1>Retire seu pedido na panificadora</h1>
             <p>
-              Preencha seus dados. Ao enviar, o pedido será registrado e o
-              WhatsApp abrirá com os detalhes.
+              Preencha seus dados. Ao enviar, o pedido será
+              registrado e o WhatsApp abrirá com os detalhes.
             </p>
           </div>
 
@@ -593,21 +655,14 @@ function App() {
               <label>Modalidade do pedido</label>
 
               <div className="choices">
-                <button
-                  type="button"
-                  data-testid="fulfillment-pickup"
+                <div
                   className="selected"
-                  onClick={() =>
-                    setForm((current) => ({
-                      ...current,
-                      fulfillment: "retirada",
-                    }))
-                  }
+                  data-testid="fulfillment-pickup"
                 >
                   <Store size={22} />
-                  <b>Retirar na panificadora</b>
+                  <b>Retirar na padaria</b>
                   <small>Você busca seu pedido</small>
-                </button>
+                </div>
               </div>
             </div>
 
@@ -689,19 +744,24 @@ function App() {
       )}
 
       {step === "sent" && (
-        <section className="success" data-testid="order-sent-message">
+        <section
+          className="success"
+          data-testid="order-sent-message"
+        >
           <div className="success-icon">
             <Check size={34} />
           </div>
 
-          <span className="eyebrow">PEDIDO ENCAMINHADO</span>
+          <span className="eyebrow">
+            PEDIDO ENCAMINHADO
+          </span>
 
           <h1>Agora é só conversar com a gente!</h1>
 
           <p>
-            Seu pedido foi registrado e o WhatsApp foi aberto com os detalhes.
-            Envie a mensagem para a Panificadora Carvalho e aguarde nossa
-            confirmação.
+            Seu pedido foi registrado e o WhatsApp foi aberto
+            com os detalhes. Envie a mensagem para a
+            Panificadora Carvalho e aguarde nossa confirmação.
           </p>
 
           <button
@@ -720,7 +780,9 @@ function App() {
 
       <footer>
         <b>Panificadora Carvalho</b>
-        <span>Qualidade que você sente no primeiro pedaço.</span>
+        <span>
+          Qualidade que você sente no primeiro pedaço.
+        </span>
 
         <a
           href="https://wa.me/5593991552808"
@@ -734,4 +796,3 @@ function App() {
 }
 
 export default App;
-```
