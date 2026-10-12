@@ -171,7 +171,6 @@ function App() {
         <div className="choice-group"><label>Você prefere</label>
           <div className="choices">
             <button type="button" data-testid="fulfillment-pickup" className={form.fulfillment === "retirada" ? "selected" : ""} onClick={() => setForm({ ...form, fulfillment: "retirada" })}><Store size={22} /><b>Retirar na padaria</b><small>Você busca seu pedido</small></button>
-            <button type="button" data-testid="fulfillment-delivery" className={form.fulfillment === "entrega" ? "selected" : ""} onClick={() => setForm({ ...form, fulfillment: "entrega" })}><Truck size={22} /><b>Receber em casa</b><small>Combinaremos a entrega</small></button>
           </div>
         </div>
         <div className="form-grid">
