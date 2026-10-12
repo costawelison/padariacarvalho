@@ -59,10 +59,14 @@ const slug = (s) =>
     .replaceAll("/", "-");
 
 const resolveImageUrl = (url) => {
-  if (!url) return "";
+  if (!url) {
+    return "";
+  }
+
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || "";
 
   if (url.startsWith("/api/")) {
-    return `${process.env.REACT_APP_BACKEND_URL}${url}`;
+    return backendUrl.replace(/\/$/, "") + url;
   }
 
   return url;
