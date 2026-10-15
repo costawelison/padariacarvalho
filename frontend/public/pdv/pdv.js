@@ -17,8 +17,8 @@ function textoSeguroImpressao(valor) {
     .trim();
 }
 
+```javascript
 function criarUrlImpressaoPedido(order, total, troco = 0) {
-
   const LARGURA = 48;
 
   function centralizar(texto) {
@@ -28,7 +28,9 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
       return texto;
     }
 
-    const espacos = Math.floor((LARGURA - texto.length) / 2);
+    const espacos = Math.floor(
+      (LARGURA - texto.length) / 2
+    );
 
     return " ".repeat(espacos) + texto;
   }
@@ -44,12 +46,18 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
   // CABEÇALHO
   texto += linha("PANIFICADORA CARVALHO");
   texto += linha("PEDIDO / VENDA");
-
   texto += linha("--------------------------------");
 
   // CLIENTE
- texto += "Cliente: " + textoSeguroImpressao(order.customer_name) + "#lf#";
-texto += "Telefone: " + textoSeguroImpressao(order.phone) + "#lf#";
+  texto += linha(
+    "Cliente: " +
+    textoSeguroImpressao(order.customer_name)
+  );
+
+  // TELEFONE DO CLIENTE
+  texto += linha(
+    "Telefone: " +
+    textoSeguroImpressao(order.phone)
   );
 
   // PAGAMENTO
@@ -69,8 +77,7 @@ texto += "Telefone: " + textoSeguroImpressao(order.phone) + "#lf#";
   texto += "#lf#";
 
   // PRODUTOS
-  order.items.forEach(item => {
-
+  (order.items || []).forEach(item => {
     const subtotal =
       Number(item.unit_price) *
       Number(item.quantity);
@@ -105,18 +112,19 @@ texto += "Telefone: " + textoSeguroImpressao(order.phone) + "#lf#";
   }
 
   texto += linha("--------------------------------");
-
   texto += "#lf#";
 
   // RODAPÉ
   texto += linha("Obrigado pela preferencia!");
   texto += linha("Volte sempre!");
 
+  // AVANÇO DO PAPEL PARA O CORTE
   texto += "#lf##lf##lf##lf##lf##lf#";
 
   return criarUrlMobilePrintUtil(texto);
 }
-function mostrarSucessoVenda(order, total, troco = 0) {
+```
+  function mostrarSucessoVenda(order, total, troco = 0) {
   const printUrl =
     criarUrlImpressaoPedido(
       order,
