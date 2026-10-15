@@ -17,7 +17,6 @@ function textoSeguroImpressao(valor) {
     .trim();
 }
 
-```javascript
 function criarUrlImpressaoPedido(order, total, troco = 0) {
   const LARGURA = 48;
 
@@ -42,31 +41,25 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
   let texto = "";
 
   texto += "#escps#";
-
-  // CABEÇALHO
   texto += linha("PANIFICADORA CARVALHO");
   texto += linha("PEDIDO / VENDA");
   texto += linha("--------------------------------");
 
-  // CLIENTE
   texto += linha(
     "Cliente: " +
     textoSeguroImpressao(order.customer_name)
   );
 
-  // TELEFONE DO CLIENTE
   texto += linha(
     "Telefone: " +
     textoSeguroImpressao(order.phone)
   );
 
-  // PAGAMENTO
   texto += linha(
     "Pagamento: " +
     textoSeguroImpressao(order.payment)
   );
 
-  // OBSERVAÇÃO
   if (order.notes) {
     texto += linha(
       "Obs: " +
@@ -76,7 +69,6 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
 
   texto += "#lf#";
 
-  // PRODUTOS
   (order.items || []).forEach(item => {
     const subtotal =
       Number(item.unit_price) *
@@ -96,51 +88,32 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
   });
 
   texto += "#lf#";
-
-  // TOTAL
   texto += linha("--------------------------------");
+  texto += linha("TOTAL: " + money(total));
 
-  texto += linha(
-    "TOTAL: " + money(total)
-  );
-
-  // TROCO
   if (troco > 0) {
-    texto += linha(
-      "TROCO: " + money(troco)
-    );
+    texto += linha("TROCO: " + money(troco));
   }
 
   texto += linha("--------------------------------");
   texto += "#lf#";
-
-  // RODAPÉ
   texto += linha("Obrigado pela preferencia!");
   texto += linha("Volte sempre!");
-
-  // AVANÇO DO PAPEL PARA O CORTE
   texto += "#lf##lf##lf##lf##lf##lf#";
 
   return criarUrlMobilePrintUtil(texto);
 }
-```
-  function mostrarSucessoVenda(order, total, troco = 0) {
+
+function mostrarSucessoVenda(order, total, troco = 0) {
   const printUrl =
-    criarUrlImpressaoPedido(
-      order,
-      total,
-      troco
-    );
+    criarUrlImpressaoPedido(order, total, troco);
 
   const m = modal(`
     <div class="modal-head">
       <div>
         <h2>✅ Venda registrada!</h2>
-
         <p>
-          Total:
-          <b>${money(total)}</b>
-
+          Total: <b>${money(total)}</b>
           ${
             troco > 0
               ? ` • Troco: <b>${money(troco)}</b>`
@@ -150,17 +123,8 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
       </div>
     </div>
 
-    <div
-      style="
-        padding:12px 0 18px;
-        text-align:center;
-      "
-    >
-      <p
-        style="
-          margin:0 0 16px;
-        "
-      >
+    <div style="padding:12px 0 18px;text-align:center;">
+      <p style="margin:0 0 16px;">
         A venda foi salva.
         Agora toque no botão abaixo
         para abrir o Mobile Print Util
@@ -171,64 +135,43 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
         id="printSaleBtn"
         class="primary"
         href="#"
-        style="
-          display:block;
-          text-decoration:none;
-          text-align:center;
-        "
+        style="display:block;text-decoration:none;text-align:center;"
       >
         🖨️ Imprimir pedido
       </a>
 
       <button
         id="closeSaleSuccess"
-        style="
-          width:100%;
-          margin-top:10px;
-        "
+        style="width:100%;margin-top:10px;"
       >
         Fechar
       </button>
     </div>
   `);
 
-  const printBtn =
-    m.querySelector(
-      "#printSaleBtn"
-    );
+  m.querySelector("#printSaleBtn").href = printUrl;
 
-  printBtn.href = printUrl;
-
-  m.querySelector(
-    "#closeSaleSuccess"
-  ).onclick = () => m.remove();
+  m.querySelector("#closeSaleSuccess").onclick = () => m.remove();
 }
 
-const productImage =
-  url => url || LOGO_URL;
+const productImage = url => url || LOGO_URL;
 
 const state = {
   products: [],
   cart: [],
   category: "Todos",
   search: "",
-  token:
-    localStorage.getItem(
-      TOKEN_KEY
-    ) || "",
+  token: localStorage.getItem(TOKEN_KEY) || "",
   store: null,
   sales: [],
   payment: "Dinheiro"
 };
 
 const money = n =>
-  Number(n || 0).toLocaleString(
-    "pt-BR",
-    {
-      style: "currency",
-      currency: "BRL"
-    }
-  );
+  Number(n || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
 
 const esc = s =>
   String(s ?? "").replace(
@@ -244,46 +187,28 @@ const esc = s =>
 
 const headers = () =>
   state.token
-    ? {
-        Authorization:
-          `Bearer ${state.token}`
-      }
+    ? { Authorization: `Bearer ${state.token}` }
     : {};
 
 const cartTotal = () =>
-  state.cart.reduce(
-    (s, i) =>
-      s + i.price * i.qty,
-    0
-  );
+  state.cart.reduce((s, i) => s + i.price * i.qty, 0);
 
 const cartCount = () =>
-  state.cart.reduce(
-    (s, i) =>
-      s + i.qty,
-    0
-  );
+  state.cart.reduce((s, i) => s + i.qty, 0);
 
 function renderLogin(error = "") {
-  document.getElementById(
-    "app"
-  ).innerHTML = `
+  document.getElementById("app").innerHTML = `
     <div class="login-wrap">
       <div class="login-card">
-
         <div class="logo-title">
           <div class="mark">🥖</div>
-
           <div>
             <h2>PDV</h2>
-            <p>
-              Panificadora Carvalho
-            </p>
+            <p>Panificadora Carvalho</p>
           </div>
         </div>
 
         <label>E-mail</label>
-
         <input
           id="loginEmail"
           type="email"
@@ -291,7 +216,6 @@ function renderLogin(error = "") {
         >
 
         <label>Senha</label>
-
         <input
           id="loginPassword"
           type="password"
@@ -300,246 +224,167 @@ function renderLogin(error = "") {
 
         ${
           error
-            ? `<div class="error">
-                ${esc(error)}
-              </div>`
+            ? `<div class="error">${esc(error)}</div>`
             : ""
         }
 
-        <button
-          class="primary"
-          id="loginBtn"
-        >
+        <button class="primary" id="loginBtn">
           Entrar no PDV
         </button>
-
       </div>
     </div>
   `;
 
-  document.getElementById(
-    "loginBtn"
-  ).onclick = login;
+  document.getElementById("loginBtn").onclick = login;
 
-  document.getElementById(
-    "loginPassword"
-  ).onkeydown = e => {
-    if (e.key === "Enter") {
-      login();
-    }
+  document.getElementById("loginPassword").onkeydown = e => {
+    if (e.key === "Enter") login();
   };
 }
 
 async function login() {
-  const email =
-    document.getElementById(
-      "loginEmail"
-    ).value.trim();
-
-  const password =
-    document.getElementById(
-      "loginPassword"
-    ).value;
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
 
   try {
-    const r = await fetch(
-      `${API}/auth/login`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-        body: JSON.stringify({
-          email,
-          password
-        })
-      }
-    );
+    const r = await fetch(`${API}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
 
     const d = await r.json();
 
     if (!r.ok) {
-      throw new Error(
-        d.detail ||
-        "E-mail ou senha inválidos"
-      );
+      throw new Error(d.detail || "E-mail ou senha inválidos");
     }
 
     state.token = d.token;
-
-    localStorage.setItem(
-      TOKEN_KEY,
-      state.token
-    );
+    localStorage.setItem(TOKEN_KEY, state.token);
 
     await init();
-
   } catch (e) {
-    renderLogin(
-      e.message
-    );
+    renderLogin(e.message || "Não foi possível entrar.");
   }
 }
 
 async function apiGet(path) {
-  const r = await fetch(
-    `${API}${path}`,
-    {
-      headers: headers()
-    }
-  );
+  const r = await fetch(`${API}${path}`, {
+    headers: headers()
+  });
 
   if (r.status === 401) {
     logout();
-
-    throw new Error(
-      "Sessão expirada"
-    );
+    throw new Error("Sessão expirada");
   }
 
-  const d =
-    await r.json();
+  const d = await r.json();
 
   if (!r.ok) {
-    throw new Error(
-      d.detail ||
-      "Erro na API"
-    );
+    throw new Error(d.detail || "Erro na API");
   }
 
   return d;
 }
 
-async function apiSend(
-  path,
-  method,
-  body
-) {
-  const r = await fetch(
-    `${API}${path}`,
-    {
-      method,
-      headers: {
-        "Content-Type":
-          "application/json",
-        ...headers()
-      },
-      body:
-        JSON.stringify(body)
-    }
-  );
+async function apiSend(path, method, body) {
+  const r = await fetch(`${API}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers()
+    },
+    body: JSON.stringify(body)
+  });
 
   if (r.status === 401) {
     logout();
-
-    throw new Error(
-      "Sessão expirada"
-    );
+    throw new Error("Sessão expirada");
   }
 
-  const d =
-    await r.json();
+  const d = await r.json();
 
   if (!r.ok) {
-    throw new Error(
-      d.detail ||
-      "Erro na API"
-    );
+    throw new Error(d.detail || "Erro na API");
   }
 
   return d;
+}
+
+function mostrarCarregamento() {
+  const app = document.getElementById("app");
+  if (!app) return;
+
+  app.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#f6f7f9;font-family:Arial,sans-serif;color:#222;text-align:center;">
+      <div style="max-width:360px;background:#fff;padding:28px;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.08);">
+        <div style="font-size:42px;margin-bottom:12px;">🥖</div>
+        <h2 style="margin:0 0 8px;">Panificadora Carvalho</h2>
+        <p style="margin:0 0 18px;color:#666;">Abrindo o PDV, aguarde...</p>
+        <div style="width:34px;height:34px;border:4px solid #e7e7e7;border-top-color:#e87522;border-radius:50%;margin:0 auto;animation:pdvGirar .8s linear infinite;"></div>
+        <style>@keyframes pdvGirar{to{transform:rotate(360deg)}}</style>
+      </div>
+    </div>
+  `;
 }
 
 async function init() {
-  try {
-    await apiGet(
-      "/auth/me"
-    );
+  mostrarCarregamento();
 
-    [
-      state.products,
-      state.store
-    ] = await Promise.all([
+  try {
+    await apiGet("/auth/me");
+
+    [state.products, state.store] = await Promise.all([
       apiGet("/products"),
       apiGet("/store/status")
     ]);
 
     try {
-      state.sales =
-        await apiGet(
-          "/orders"
-        );
+      state.sales = await apiGet("/orders");
     } catch (_) {
       state.sales = [];
     }
 
     render();
-
   } catch (e) {
-    renderLogin(
-      state.token
-        ? e.message
-        : ""
-    );
+    renderLogin(state.token ? (e.message || "Erro ao carregar o PDV.") : "");
   }
 }
 
 function logout() {
   state.token = "";
-
-  localStorage.removeItem(
-    TOKEN_KEY
-  );
-
+  localStorage.removeItem(TOKEN_KEY);
   renderLogin();
 }
 
 function categories() {
   return [
     "Todos",
-    ...new Set(
-      state.products.map(
-        p => p.category
-      )
-    )
+    ...new Set(state.products.map(p => p.category))
   ];
 }
 
 function filtered() {
-  const q =
-    state.search
-      .toLowerCase()
-      .trim();
+  const q = state.search.toLowerCase().trim();
 
-  return state.products.filter(
-    p =>
-      (
-        state.category ===
-          "Todos" ||
-        p.category ===
-          state.category
-      ) &&
-      (
-        !q ||
-        p.name
-          .toLowerCase()
-          .includes(q) ||
-        String(
-          p.description || ""
-        )
-          .toLowerCase()
-          .includes(q)
-      ) &&
-      p.available
+  return state.products.filter(p =>
+    (
+      state.category === "Todos" ||
+      p.category === state.category
+    ) &&
+    (
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      String(p.description || "").toLowerCase().includes(q)
+    ) &&
+    p.available
   );
 }
 
 function add(p) {
-  const x =
-    state.cart.find(
-      i => i.id === p.id
-    );
+  if (!p) return;
+
+  const x = state.cart.find(i => i.id === p.id);
 
   if (x) {
     x.qty++;
@@ -547,8 +392,7 @@ function add(p) {
     state.cart.push({
       id: p.id,
       name: p.name,
-      price:
-        Number(p.price),
+      price: Number(p.price),
       qty: 1
     });
   }
@@ -557,20 +401,13 @@ function add(p) {
 }
 
 function changeQty(id, d) {
-  const x =
-    state.cart.find(
-      i => i.id === id
-    );
-
+  const x = state.cart.find(i => String(i.id) === String(id));
   if (!x) return;
 
   x.qty += d;
 
   if (x.qty <= 0) {
-    state.cart =
-      state.cart.filter(
-        i => i.id !== id
-      );
+    state.cart = state.cart.filter(i => String(i.id) !== String(id));
   }
 
   render();
@@ -578,11 +415,8 @@ function changeQty(id, d) {
 function render() {
   document.getElementById("app").innerHTML = `
     <div class="pdv">
-
       <header class="topbar">
-
         <div class="brand">
-
           <img
             class="brand-logo"
             src="${LOGO_URL}"
@@ -590,597 +424,281 @@ function render() {
           >
 
           <div class="brand-info">
-            <strong>
-              Panificadora Carvalho
-            </strong>
-
-            <span>
-              PDV - Ponto de Venda
-            </span>
-
-            <small>
-              Qualidade e sabor todos os dias!
-            </small>
+            <strong>Panificadora Carvalho</strong>
+            <span>PDV - Ponto de Venda</span>
+            <small>Qualidade e sabor todos os dias!</small>
           </div>
-
         </div>
 
         <div class="top-actions">
-
-          <span
-            class="status ${
-              state.store?.is_open
-                ? "open"
-                : "closed"
-            }"
-          >
-            ${
-              state.store?.is_open
-                ? "● Loja aberta"
-                : "● Loja fechada"
-            }
+          <span class="status ${state.store?.is_open ? "open" : "closed"}">
+            ${state.store?.is_open ? "● Loja aberta" : "● Loja fechada"}
           </span>
 
-          <button id="refreshBtn">
-            Atualizar
-          </button>
-
-          <button id="logoutBtn">
-            Sair
-          </button>
-
+          <button id="refreshBtn">Atualizar</button>
+          <button id="logoutBtn">Sair</button>
         </div>
-
       </header>
 
       <div class="workspace">
-
         <main class="catalog">
-
           <div class="toolbar">
-
             <input
               class="search"
               id="search"
               placeholder="🔎 Buscar produto..."
               value="${esc(state.search)}"
             >
-
           </div>
 
           <div class="categories">
-
-            ${categories()
-              .map(
-                c => `
-                  <button
-                    class="cat ${
-                      c === state.category
-                        ? "active"
-                        : ""
-                    }"
-                    data-cat="${esc(c)}"
-                  >
-                    ${esc(c)}
-                  </button>
-                `
-              )
-              .join("")}
-
+            ${categories().map(c => `
+              <button
+                class="cat ${c === state.category ? "active" : ""}"
+                data-cat="${esc(c)}"
+              >
+                ${esc(c)}
+              </button>
+            `).join("")}
           </div>
 
           <div class="products">
-
             ${
-              filtered()
-                .map(
-                  p => `
-                    <article class="product">
+              filtered().map(p => `
+                <article class="product">
+                  <img
+                    class="product-image"
+                    src="${productImage(p.image_url)}"
+                    alt="${esc(p.name)}"
+                    onerror="this.onerror=null;this.src='${LOGO_URL}'"
+                  >
 
-                      <img
-                        class="product-image"
-                        src="${productImage(
-                          p.image_url
-                        )}"
-                        alt="${esc(p.name)}"
-                        onerror="this.src='${LOGO_URL}'"
-                      >
+                  <h3>${esc(p.name)}</h3>
+                  <p>${esc(p.description || "")}</p>
+                  <div class="price">${money(p.price)}</div>
 
-                      <h3>
-                        ${esc(p.name)}
-                      </h3>
-
-                      <p>
-                        ${esc(
-                          p.description || ""
-                        )}
-                      </p>
-
-                      <div class="price">
-                        ${money(p.price)}
-                      </div>
-
-                      <button
-                        data-add="${p.id}"
-                      >
-                        Adicionar
-                      </button>
-
-                    </article>
-                  `
-                )
-                .join("")
-
-              ||
-
-              `
-                <div class="empty">
-                  Nenhum produto encontrado.
-                </div>
-              `
+                  <button data-add="${p.id}">
+                    Adicionar
+                  </button>
+                </article>
+              `).join("") ||
+              `<div class="empty">Nenhum produto encontrado.</div>`
             }
-
           </div>
-
         </main>
 
         <aside class="cart-panel">
-
           <div class="cart-head">
-
-            <h2>
-              Pedido atual
-            </h2>
-
-            <strong>
-              ${cartCount()} item(ns)
-            </strong>
-
+            <h2>Pedido atual</h2>
+            <strong>${cartCount()} item(ns)</strong>
           </div>
 
           <div class="cart-items">
-
             ${
               state.cart.length
-                ? state.cart
-                    .map(
-                      i => `
-                        <div class="cart-item">
+                ? state.cart.map(i => `
+                    <div class="cart-item">
+                      <div>
+                        <div class="cart-name">${esc(i.name)}</div>
+                        <div class="cart-sub">${money(i.price)} cada</div>
 
-                          <div>
-
-                            <div class="cart-name">
-                              ${esc(i.name)}
-                            </div>
-
-                            <div class="cart-sub">
-                              ${money(i.price)} cada
-                            </div>
-
-                            <div class="qty">
-
-                              <button
-                                data-minus="${i.id}"
-                              >
-                                −
-                              </button>
-
-                              <b>
-                                ${i.qty}
-                              </b>
-
-                              <button
-                                data-plus="${i.id}"
-                              >
-                                +
-                              </button>
-
-                            </div>
-
-                          </div>
-
-                          <div
-                            style="text-align:right"
-                          >
-
-                            <b>
-                              ${money(
-                                i.price *
-                                i.qty
-                              )}
-                            </b>
-
-                            <br>
-
-                            <button
-                              class="remove"
-                              data-remove="${i.id}"
-                            >
-                              remover
-                            </button>
-
-                          </div>
-
+                        <div class="qty">
+                          <button data-minus="${i.id}">−</button>
+                          <b>${i.qty}</b>
+                          <button data-plus="${i.id}">+</button>
                         </div>
-                      `
-                    )
-                    .join("")
+                      </div>
 
+                      <div style="text-align:right">
+                        <b>${money(i.price * i.qty)}</b>
+                        <br>
+                        <button class="remove" data-remove="${i.id}">
+                          remover
+                        </button>
+                      </div>
+                    </div>
+                  `).join("")
                 : `
                     <div class="empty">
                       Seu pedido está vazio.
                       <br>
-                      Toque em um produto
-                      para adicionar.
+                      Toque em um produto para adicionar.
                     </div>
                   `
             }
-
           </div>
 
           <div class="cart-foot">
-
             <div class="total">
-
-              <span>
-                Total
-              </span>
-
-              <span>
-                ${money(cartTotal())}
-              </span>
-
+              <span>Total</span>
+              <span>${money(cartTotal())}</span>
             </div>
 
             <button
               class="checkout"
               id="checkout"
-              ${
-                state.cart.length
-                  ? ""
-                  : "disabled"
-              }
+              ${state.cart.length ? "" : "disabled"}
             >
               Finalizar venda
             </button>
 
             <div class="quick">
-
-              <button id="clearCart">
-                Limpar
-              </button>
-
-              <button id="salesBtn">
-                Vendas de hoje
-              </button>
-
+              <button id="clearCart">Limpar</button>
+              <button id="salesBtn">Vendas de hoje</button>
             </div>
-
           </div>
-
         </aside>
-
       </div>
-
     </div>
   `;
 
-  document.getElementById(
-    "logoutBtn"
-  ).onclick = logout;
+  document.getElementById("logoutBtn").onclick = logout;
 
-  document.getElementById(
-    "refreshBtn"
-  ).onclick = async () => {
-
-    state.products =
-      await apiGet(
-        "/products"
-      );
-
-    state.store =
-      await apiGet(
-        "/store/status"
-      );
+  document.getElementById("refreshBtn").onclick = async () => {
+    const btn = document.getElementById("refreshBtn");
+    btn.disabled = true;
+    btn.textContent = "Atualizando...";
 
     try {
-      state.sales =
-        await apiGet(
-          "/orders"
-        );
-    } catch (_) {}
+      state.products = await apiGet("/products");
+      state.store = await apiGet("/store/status");
 
+      try {
+        state.sales = await apiGet("/orders");
+      } catch (_) {
+        state.sales = [];
+      }
+
+      render();
+    } catch (e) {
+      alert(e.message || "Não foi possível atualizar.");
+      btn.disabled = false;
+      btn.textContent = "Atualizar";
+    }
+  };
+
+  document.getElementById("search").oninput = e => {
+    state.search = e.target.value;
     render();
   };
 
-  document.getElementById(
-    "search"
-  ).oninput = e => {
+  document.querySelectorAll("[data-cat]").forEach(b => {
+    b.onclick = () => {
+      state.category = b.dataset.cat;
+      render();
+    };
+  });
 
-    state.search =
-      e.target.value;
+  document.querySelectorAll("[data-add]").forEach(b => {
+    b.onclick = () => {
+      const product = state.products.find(
+        p => String(p.id) === String(b.dataset.add)
+      );
+      add(product);
+    };
+  });
 
-    render();
-  };
+  document.querySelectorAll("[data-minus]").forEach(b => {
+    b.onclick = () => changeQty(b.dataset.minus, -1);
+  });
 
-  document
-    .querySelectorAll(
-      "[data-cat]"
-    )
-    .forEach(b => {
+  document.querySelectorAll("[data-plus]").forEach(b => {
+    b.onclick = () => changeQty(b.dataset.plus, 1);
+  });
 
-      b.onclick = () => {
+  document.querySelectorAll("[data-remove]").forEach(b => {
+    b.onclick = () => {
+      state.cart = state.cart.filter(
+        i => String(i.id) !== String(b.dataset.remove)
+      );
+      render();
+    };
+  });
 
-        state.category =
-          b.dataset.cat;
-
-        render();
-      };
-
-    });
-
-  document
-    .querySelectorAll(
-      "[data-add]"
-    )
-    .forEach(b => {
-
-      b.onclick = () => {
-
-        add(
-          state.products.find(
-            p =>
-              p.id ===
-              b.dataset.add
-          )
-        );
-
-      };
-
-    });
-
-  document
-    .querySelectorAll(
-      "[data-minus]"
-    )
-    .forEach(b => {
-
-      b.onclick = () =>
-        changeQty(
-          b.dataset.minus,
-          -1
-        );
-
-    });
-
-  document
-    .querySelectorAll(
-      "[data-plus]"
-    )
-    .forEach(b => {
-
-      b.onclick = () =>
-        changeQty(
-          b.dataset.plus,
-          1
-        );
-
-    });
-
-  document
-    .querySelectorAll(
-      "[data-remove]"
-    )
-    .forEach(b => {
-
-      b.onclick = () => {
-
-        state.cart =
-          state.cart.filter(
-            i =>
-              i.id !==
-              b.dataset.remove
-          );
-
-        render();
-      };
-
-    });
-
-  document.getElementById(
-    "clearCart"
-  ).onclick = () => {
-
+  document.getElementById("clearCart").onclick = () => {
     state.cart = [];
-
     render();
   };
 
-  document.getElementById(
-    "checkout"
-  ).onclick =
-    openCheckout;
-
-  document.getElementById(
-    "salesBtn"
-  ).onclick =
-    openSales;
+  document.getElementById("checkout").onclick = openCheckout;
+  document.getElementById("salesBtn").onclick = openSales;
 }
 
 function modal(html) {
-
-  const e =
-    document.createElement(
-      "div"
-    );
-
-  e.className =
-    "modal-back";
-
-  e.innerHTML = `
-    <div class="modal">
-      ${html}
-    </div>
-  `;
-
+  const e = document.createElement("div");
+  e.className = "modal-back";
+  e.innerHTML = `<div class="modal">${html}</div>`;
   document.body.appendChild(e);
-
   return e;
 }
 
 function openCheckout() {
-
   const m = modal(`
-
     <div class="modal-head">
-
       <div>
-
-        <h2>
-          Finalizar venda
-        </h2>
-
-        <p>
-          Total:
-          <b>
-            ${money(cartTotal())}
-          </b>
-        </p>
-
+        <h2>Finalizar venda</h2>
+        <p>Total: <b>${money(cartTotal())}</b></p>
       </div>
 
-      <button class="close">
-        ×
-      </button>
-
+      <button class="close">×</button>
     </div>
 
     <div class="form-grid">
-
       <label>
-
         Cliente (opcional)
-
-        <input
-          id="client"
-          placeholder="Nome do cliente"
-        >
-
+        <input id="client" placeholder="Nome do cliente">
       </label>
 
       <label>
-
         Telefone (opcional)
-
-        <input
-          id="phone"
-          placeholder="(93) 99999-9999"
-        >
-
+        <input id="phone" placeholder="(93) 99999-9999">
       </label>
 
       <label class="full">
-
         Observação
-
-        <textarea
-          id="notes"
-          rows="2"
-          placeholder="Observação da venda"
-        ></textarea>
-
+        <textarea id="notes" rows="2" placeholder="Observação da venda"></textarea>
       </label>
 
       <div class="full">
-
-        <b>
-          Forma de pagamento
-        </b>
+        <b>Forma de pagamento</b>
 
         <div class="payment">
-
-          ${
-            [
-              "Dinheiro",
-              "Pix",
-              "Cartão"
-            ]
-              .map(
-                p => `
-                  <button
-                    class="${
-                      p === state.payment
-                        ? "active"
-                        : ""
-                    }"
-                    data-pay="${p}"
-                  >
-                    ${p}
-                  </button>
-                `
-              )
-              .join("")
-          }
-
+          ${["Dinheiro", "Pix", "Cartão"].map(p => `
+            <button
+              class="${p === state.payment ? "active" : ""}"
+              data-pay="${p}"
+            >
+              ${p}
+            </button>
+          `).join("")}
         </div>
-
       </div>
 
-      <div
-        id="cashArea"
-        class="full"
-      ></div>
-
+      <div id="cashArea" class="full"></div>
     </div>
 
-    <button
-      class="primary"
-      id="confirmSale"
-    >
+    <button class="primary" id="confirmSale">
       Confirmar venda
     </button>
-
   `);
 
-  m.querySelector(
-    ".close"
-  ).onclick = () =>
-    m.remove();
+  m.querySelector(".close").onclick = () => m.remove();
 
-  m.querySelectorAll(
-    "[data-pay]"
-  ).forEach(b => {
-
+  m.querySelectorAll("[data-pay]").forEach(b => {
     b.onclick = () => {
-
-      state.payment =
-        b.dataset.pay;
-
+      state.payment = b.dataset.pay;
       m.remove();
-
       openCheckout();
     };
-
   });
 
-  const ca =
-    m.querySelector(
-      "#cashArea"
-    );
+  const ca = m.querySelector("#cashArea");
 
-  if (
-    state.payment ===
-    "Dinheiro"
-  ) {
-
+  if (state.payment === "Dinheiro") {
     ca.innerHTML = `
-
       <div class="change">
-
         <label>
-
           Valor recebido
-
           <input
             id="received"
             type="number"
@@ -1188,293 +706,140 @@ function openCheckout() {
             step="0.01"
             placeholder="${cartTotal().toFixed(2)}"
           >
-
         </label>
 
-        <div
-          style="margin-top:8px"
-        >
-          Troco:
-
-          <b id="change">
-            R$ 0,00
-          </b>
-
+        <div style="margin-top:8px">
+          Troco: <b id="change">R$ 0,00</b>
         </div>
-
       </div>
-
     `;
 
-    m.querySelector(
-      "#received"
-    ).oninput = e => {
-
-      m.querySelector(
-        "#change"
-      ).textContent =
-        money(
-          Math.max(
-            0,
-            Number(
-              e.target.value
-            ) -
-            cartTotal()
-          )
-        );
-
+    m.querySelector("#received").oninput = e => {
+      m.querySelector("#change").textContent = money(
+        Math.max(0, Number(e.target.value) - cartTotal())
+      );
     };
   }
 
-  m.querySelector(
-    "#confirmSale"
-  ).onclick =
-    async () => {
+  m.querySelector("#confirmSale").onclick = async () => {
+    const received = Number(m.querySelector("#received")?.value || 0);
 
-      const received =
-        Number(
-          m.querySelector(
-            "#received"
-          )?.value || 0
-        );
+    if (state.payment === "Dinheiro" && received < cartTotal()) {
+      alert("Informe um valor recebido igual ou maior que o total.");
+      return;
+    }
 
-      if (
-        state.payment ===
-          "Dinheiro" &&
-        received <
-          cartTotal()
-      ) {
+    if (!state.cart.length) {
+      alert("Adicione pelo menos um produto.");
+      return;
+    }
 
-        alert(
-          "Informe um valor recebido igual ou maior que o total."
-        );
+    const order = {
+      customer_name:
+        m.querySelector("#client").value.trim() || "Cliente balcão",
 
-        return;
-      }
+      phone:
+        m.querySelector("#phone").value.trim() || "PDV",
 
-      const order = {
+      fulfillment: "retirada",
+      address: null,
+      payment: state.payment,
 
-        customer_name:
-          m.querySelector(
-            "#client"
-          ).value.trim() ||
-          "Cliente balcão",
+      items: state.cart.map(i => ({
+        name: i.name,
+        quantity: i.qty,
+        unit_price: i.price
+      })),
 
-        phone:
-          m.querySelector(
-            "#phone"
-          ).value.trim() ||
-          "PDV",
+      total: cartTotal(),
 
-        fulfillment:
-          "retirada",
+      notes: m.querySelector("#notes").value.trim() || null
+    };
 
-        address:
-          null,
+    const confirmBtn = m.querySelector("#confirmSale");
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Salvando venda...";
 
-        payment:
-          state.payment,
+    try {
+      await apiSend("/orders", "POST", order);
 
-        items:
-          state.cart.map(
-            i => ({
-              name:
-                i.name,
+      const total = cartTotal();
 
-              quantity:
-                i.qty,
+      const troco = state.payment === "Dinheiro"
+        ? Math.max(0, received - total)
+        : 0;
 
-              unit_price:
-                i.price
-            })
-          ),
-
-        total:
-          cartTotal(),
-
-        notes:
-          m.querySelector(
-            "#notes"
-          ).value.trim() ||
-          null
-      };
+      state.cart = [];
+      state.payment = "Dinheiro";
+      m.remove();
 
       try {
-
-        await apiSend(
-          "/orders",
-          "POST",
-          order
-        );
-
-        const total =
-          cartTotal();
-
-        const troco =
-          state.payment ===
-          "Dinheiro"
-
-            ? Math.max(
-                0,
-                received -
-                  total
-              )
-
-            : 0;
-
-        state.cart = [];
-
-        state.payment =
-          "Dinheiro";
-
-        m.remove();
-
-        try {
-
-          state.sales =
-            await apiGet(
-              "/orders"
-            );
-
-        } catch (_) {}
-
-        render();
-
-        mostrarSucessoVenda(
-          order,
-          total,
-          troco
-        );
-
-      } catch (e) {
-
-        alert(
-          e.message
-        );
-
+        state.sales = await apiGet("/orders");
+      } catch (_) {
+        state.sales = [];
       }
 
-    };
+      render();
+      mostrarSucessoVenda(order, total, troco);
+    } catch (e) {
+      alert(e.message || "Não foi possível registrar a venda.");
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Confirmar venda";
+    }
+  };
 }
-
 function openSales() {
+  const today = new Date().toISOString().slice(0, 10);
 
-  const today =
-    new Date()
-      .toISOString()
-      .slice(0, 10);
+  const sales = state.sales.filter(o =>
+    (o.created_at || "").slice(0, 10) === today &&
+    o.status !== "cancelado"
+  );
 
-  const sales =
-    state.sales.filter(
-      o =>
-        (
-          o.created_at ||
-          ""
-        ).slice(0, 10) ===
-          today &&
-        o.status !==
-          "cancelado"
-    );
-
-  const total =
-    sales.reduce(
-      (s, o) =>
-        s +
-        Number(
-          o.total || 0
-        ),
-      0
-    );
+  const total = sales.reduce(
+    (s, o) => s + Number(o.total || 0),
+    0
+  );
 
   const m = modal(`
-
     <div class="modal-head">
-
       <div>
-
-        <h2>
-          Vendas de hoje
-        </h2>
-
+        <h2>Vendas de hoje</h2>
         <p>
-          Total:
-          <b>
-            ${money(total)}
-          </b>
-
-          •
-          ${sales.length}
-          venda(s)
+          Total: <b>${money(total)}</b>
+          • ${sales.length} venda(s)
         </p>
-
       </div>
 
-      <button class="close">
-        ×
-      </button>
-
+      <button class="close">×</button>
     </div>
 
     <div class="sales">
-
       ${
         sales.length
+          ? sales.slice(0, 50).map(o => `
+              <div class="sale-row">
+                <span>
+                  #${esc((o.order_id || "").slice(-6))}
+                  • ${esc(o.payment || "")}
+                </span>
 
-          ? sales
-              .slice(0, 50)
-              .map(
-                o => `
-                  <div
-                    class="sale-row"
-                  >
-
-                    <span>
-
-                      #
-                      ${esc(
-                        (
-                          o.order_id ||
-                          ""
-                        ).slice(-6)
-                      )}
-
-                      •
-
-                      ${esc(
-                        o.payment ||
-                        ""
-                      )}
-
-                    </span>
-
-                    <b>
-                      ${money(
-                        o.total
-                      )}
-                    </b>
-
-                  </div>
-                `
-              )
-              .join("")
-
+                <b>${money(o.total)}</b>
+              </div>
+            `).join("")
           : `
               <div class="empty">
-                Nenhuma venda
-                registrada hoje.
+                Nenhuma venda registrada hoje.
               </div>
             `
       }
-
     </div>
-
   `);
 
-  m.querySelector(
-    ".close"
-  ).onclick = () =>
-    m.remove();
+  m.querySelector(".close").onclick = () => m.remove();
 }
+
+// Inicia o PDV
 if (state.token) {
   init();
 } else {
