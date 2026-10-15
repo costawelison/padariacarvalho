@@ -48,9 +48,8 @@ function criarUrlImpressaoPedido(order, total, troco = 0) {
   texto += linha("--------------------------------");
 
   // CLIENTE
-  texto += linha(
-    "Cliente: " +
-    textoSeguroImpressao(order.customer_name)
+ texto += "Cliente: " + textoSeguroImpressao(order.customer_name) + "#lf#";
+texto += "Telefone: " + textoSeguroImpressao(order.phone) + "#lf#";
   );
 
   // PAGAMENTO
